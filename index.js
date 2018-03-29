@@ -103,7 +103,7 @@ function mergeStacks(stacks) {
             }
 
             levels[level] = levels[level] || [];
-            levels[level].push(start, end - start + 1, id);
+            levels[level].push(start, end - start, id);
         }
     }
 

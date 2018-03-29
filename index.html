@@ -35,7 +35,7 @@ code span { color: #aaa; }
         </code></p>
     </div>
 </div>
-<canvas id="canvas"></canvas>
+<canvas id="canvas" height="0"></canvas>
 
 <script src="index.js"></script>
 <script>
@@ -67,6 +67,8 @@ body.ondrop = (e) => {
     body.classList.remove('hover');
     body.classList.add('loaded');
 
+    canvas.height = 0;
+
     now();
     logEl.innerHTML = 'Loading...';
 
@@ -92,12 +94,14 @@ body.ondrop = (e) => {
 };
 
 function render() {
-    const pxPerLevel = 16;
+    const pxPerLevel = 18;
     const w = canvas.width = canvas.clientWidth;
     const h = canvas.height = pxPerLevel * levels.length;
     const pxPerTick = w / numTicks;
 
     canvas.style.height = canvas.height + 'px';
+
+    ctx.globalCompositeOperation = 'destination-over';
 
     if (devicePixelRatio > 1) {
         canvas.width *= 2;
@@ -108,7 +112,7 @@ function render() {
     let numRects = 0;
 
     ctx.lineWidth = 1;
-    ctx.strokeStyle = '#000';
+    ctx.strokeStyle = '#555';
     ctx.font = `10px/${pxPerLevel}px sans-serif`;
 
     for (let i = 0; i < levels.length; i++) {
@@ -117,32 +121,62 @@ function render() {
         for (let j = 0; j < level.length; j += 3) {
             const x = level[j] * pxPerTick;
             const y = i * pxPerLevel;
-            const numBarTicks = level[j + 1];
+            let numBarTicks = level[j + 1];
+
+            let collapsed = false;
+
+            if (numBarTicks * pxPerTick <= 5) {
+                numBarTicks = level[j + 1];
+                collapsed = true;
+
+                j += 3;
+                while (j < level.length && (level[j - 3] + level[j - 2] === level[j]) && (level[j + 1] * pxPerTick <= 5)) {
+                    numBarTicks += level[j + 1];
+                    j += 3;
+                }
+                j -= 3;
+            }
+
             const sw = numBarTicks * pxPerTick;
-            // if (sw < 0.1) continue;
-            ctx.save();
+
+            if (sw < 1) continue;
+
+            // if (sw < 1) continue;
             ctx.beginPath();
-            ctx.rect(x, y, sw, pxPerLevel);
-            ctx.stroke();
-            ctx.clip();
-            ctx.fillStyle = '#faa';
+            ctx.rect(x, y, sw - 0.5, pxPerLevel - 0.5);
+            if (!collapsed) {
+                ctx.stroke();
+                ctx.fillStyle = '#fbb';
+            } else {
+                // ctx.fillStyle = `hsl(0,0%,${100 * i / levels.length}%)`
+                ctx.fillStyle = '#ffbbbb99';
+            }
             ctx.fill();
 
-            const name = `${names[level[j + 2]]} (${Math.round(10000 * numBarTicks / numTicks) / 100}%)`;
-            // const tw = ctx.measureText(name).width;
-            if (sw >= 20) {
+            if (!collapsed && sw >= 20) {
+                ctx.save();
+                ctx.clip();
+                const name = `${names[level[j + 2]]} (${Math.round(10000 * numBarTicks / numTicks) / 100}%)`;
                 ctx.fillStyle = 'black';
-                ctx.fillText(name, x + 2, y + 11);
+                ctx.textBaseline = 'middle';
+                ctx.fillText(name, x + 1, y + pxPerLevel / 2);
+                ctx.restore();
             }
-            ctx.restore();
 
             numRects++;
         }
     }
 }
 
+// let timer = frame;
+// function frame() {
+//     if (stacks) render();
+//     requestAnimationFrame(frame);
+// }
+// frame();
+
 window.onresize = () => {
-    render();
+    if (stacks) render;
 };
 
 function humanFileSize(size) {
