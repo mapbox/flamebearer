@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>flamebearer</title>
+<meta charset="utf-8">
+<style>
+
+html, body { height: 100%; }
+body { font-family: sans-serif; margin: 0; line-height: 1.5; }
+body.hover { background: #cfc; }
+#intro { margin: 2em; }
+#fire-icon { fill: red; }
+p.code { color: #444; line-height: 1.2; }
+code span { color: #aaa; }
+
+</style>
+</head>
+<body>
+
+<div id="intro">
+    <h1>
+        <svg id="fire-icon" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 15 15" style="enable-background:new 0 0 15 15;" xml:space="preserve"><path d="M7.5,0.5L5,4.5l-1.5-2 C2.9452,3.4753,0.8036,5.7924,0.8036,8.3036C0.8036,12.002,3.8017,15,7.5,15s6.6964-2.998,6.6964-6.6964 c0-2.5112-2.1416-4.8283-2.6964-5.8036l-1.5,2L7.5,0.5z M7.5,7c0,0,2.5,2.5618,2.5,4.5c0,0.8371-0.8259,2-2.5,2S5,12.3371,5,11.5 C5,9.6283,7.5,7,7.5,7z"/></svg>
+        flamebearer
+    </h1>
+    <div id="log">
+        <p>Generate a flame graph by <strong>dragging</strong> a JSON V8 log on this page:</p>
+
+        <p class="code"><code>
+            node --prof app.js <span># profile your app</span><br>
+            node --prof-process --preprocess -j isolate*.log > v8.json <span># generate a V8 log</span><br>
+            <span># then drag and drop the resulting file here</span>
+        </code></p>
+    </div>
+</div>
+<canvas id="canvas"></canvas>
+
+<script src="index.js"></script>
+<script>
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const body = document.body;
+
+const logEl = document.getElementById('log');
+
+let start = 0;
+const now = () => {
+    const end = performance.now();
+    const len = end - start;
+    start = end;
+    return Math.round(len);
+};
+
+body.ondragover = () => {
+    body.classList.add('hover');
+    return false;
+};
+body.ondragleave = (e) => {
+    body.classList.remove('hover');
+};
+body.ondrop = (e) => {
+    body.classList.remove('hover');
+    body.classList.add('loaded');
+
+    now();
+    logEl.innerHTML = 'Loading...';
+
+    var reader = new FileReader();
+    reader.onload = function (event) {
+        logEl.innerHTML = `Loaded ${humanFileSize(event.target.result.length)} in ${now()} ms. `;
+
+        var json = JSON.parse(event.target.result);
+        logEl.innerHTML += `Parsed in ${now()} ms. `;
+
+        const {names, stacks} = v8logToStacks(json);
+        const levels = mergeStacks(stacks);
+        logEl.innerHTML += `Processed in ${now()} ms.`;
+
+        // TODO draw flame graph
+    };
+    reader.readAsText(e.dataTransfer.files[0]);
+
+    e.preventDefault();
+    return false;
+};
+
+function humanFileSize(size) {
+    var i = Math.floor(Math.log(size) / Math.log(1024));
+    return Math.round(100 * (size / Math.pow(1024, i))) / 100 + ' ' + ['B', 'kB', 'MB', 'GB'][i];
+}
+
+</script>
+</body>
+</html>

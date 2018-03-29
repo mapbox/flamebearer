@@ -106,6 +106,6 @@ function mergeStacks(stacks) {
     return levels;
 }
 
-if (typeof exports !== undefined) {
+if (typeof exports !== 'undefined') {
     Object.assign(exports, {v8logToStacks, mergeStacks});
 }
