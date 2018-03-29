@@ -112,7 +112,7 @@ function render() {
     let numRects = 0;
 
     ctx.lineWidth = 1;
-    ctx.strokeStyle = '#555';
+    ctx.strokeStyle = 'white';
     ctx.font = `10px/${pxPerLevel}px sans-serif`;
 
     for (let i = 0; i < levels.length; i++) {
@@ -139,17 +139,16 @@ function render() {
 
             const sw = numBarTicks * pxPerTick;
 
-            if (sw < 1) continue;
+            if (sw < 1.5) continue;
 
-            // if (sw < 1) continue;
             ctx.beginPath();
             ctx.rect(x, y, sw - 0.5, pxPerLevel - 0.5);
             if (!collapsed) {
                 ctx.stroke();
-                ctx.fillStyle = '#fbb';
+                ctx.fillStyle = '#fa9';
             } else {
                 // ctx.fillStyle = `hsl(0,0%,${100 * i / levels.length}%)`
-                ctx.fillStyle = '#ffbbbb99';
+                ctx.fillStyle = '#ffaa9988';
             }
             ctx.fill();
 
