@@ -86,6 +86,10 @@ function mergeStacks(stacks) {
 
         while (i <= right) {
             const id = stacks[i][level];
+            if (id === undefined) {
+                i++;
+                continue;
+            }
 
             const start = i;
             let hasChildren = false;

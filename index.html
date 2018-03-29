@@ -45,6 +45,8 @@ const body = document.body;
 
 const logEl = document.getElementById('log');
 
+let names, stacks, levels, numTicks;
+
 let start = 0;
 const now = () => {
     const end = performance.now();
@@ -76,11 +78,12 @@ body.ondrop = (e) => {
             logEl.innerHTML += `Parsed in ${now()} ms. `;
 
             requestAnimationFrame(() => {
-                const {names, stacks} = v8logToStacks(json);
-                const levels = mergeStacks(stacks);
+                ({names, stacks} = v8logToStacks(json));
+                numTicks = stacks.length;
+                levels = mergeStacks(stacks);
                 logEl.innerHTML += `Processed in ${now()} ms. `;
 
-                requestAnimationFrame(() => render(names, levels, stacks.length));
+                requestAnimationFrame(render);
             });
         });
     };
@@ -90,13 +93,12 @@ body.ondrop = (e) => {
     return false;
 };
 
-function render(names, levels, numTicks) {
+function render() {
     const pxPerLevel = 16;
     const w = canvas.width = canvas.clientWidth;
     const h = canvas.height = pxPerLevel * levels.length;
     const pxPerTick = w / numTicks;
 
-    canvas.style.width = canvas.width + 'px';
     canvas.style.height = canvas.height + 'px';
 
     if (devicePixelRatio > 1) {
@@ -109,7 +111,7 @@ function render(names, levels, numTicks) {
 
     ctx.lineWidth = 1;
     ctx.strokeStyle = '#000';
-    ctx.fillStyle = '#f77';
+    ctx.font = `10px/${pxPerLevel}px sans-serif`;
 
     for (let i = 0; i < levels.length; i++) {
         const level = levels[i];
@@ -119,16 +121,30 @@ function render(names, levels, numTicks) {
             const y = i * pxPerLevel;
             const sw = level[j + 1] * pxPerTick;
             // if (sw < 0.1) continue;
+            ctx.save();
             ctx.beginPath();
-            ctx.rect(x | 0, y | 0, sw | 0, pxPerLevel | 0);
+            ctx.rect(x, y, sw, pxPerLevel);
             ctx.stroke();
+            ctx.clip();
+            ctx.fillStyle = '#faa';
             ctx.fill();
+
+            const name = names[level[j + 2]];
+            // const tw = ctx.measureText(name).width;
+            if (sw >= 20) {
+                ctx.fillStyle = 'black';
+                ctx.fillText(name, x + 2, y + 11);
+            }
+            ctx.restore();
+
             numRects++;
         }
     }
-
-    logEl.innerHTML += `Rendered ${numRects} blocks in ${now()} ms.`;
 }
+
+window.onresize = () => {
+    render();
+};
 
 function humanFileSize(size) {
     var i = Math.floor(Math.log(size) / Math.log(1024));
