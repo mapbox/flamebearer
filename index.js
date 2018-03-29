@@ -1,21 +1,5 @@
 'use strict';
 
-console.time('load');
-const log = require('./gljs.json');
-console.timeEnd('load');
-
-console.time('process');
-const {names, stacks} = v8logToStacks(log);
-const levels = mergeStacks(stacks);
-console.timeEnd('process');
-
-// console.log('samples: ' + stacks.length);
-// console.log(JSON.stringify(levels.map(b => b.length)));
-// console.log('items ' + levels.reduce((memo, b) => memo + b.length / 3, 0));
-
-// console.log(JSON.stringify({names, levels}));
-
-
 // classifications borrowed from:
 // https://github.com/v8/v8/blob/master/tools/profview/profile-utils.js (BSD)
 function codeToName(code) {
@@ -120,4 +104,8 @@ function mergeStacks(stacks) {
     }
 
     return levels;
+}
+
+if (typeof exports !== undefined) {
+    Object.assign(exports, {v8logToStacks, mergeStacks});
 }

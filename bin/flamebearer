@@ -1,0 +1,24 @@
+#!/usr/bin/env node
+
+const fs = require('fs');
+const concat = require('concat-stream');
+const flamebearer = require('../');
+
+var input = process.stdin.isTTY ? fs.createReadStream(process.argv[2]) : process.stdin;
+
+input.pipe(concat(function(buf) {
+    console.time('parse JSON');
+    const json = JSON.parse(buf.toString('utf8'));
+    console.timeEnd('parse JSON');
+
+    console.time('process v8 log');
+    const {names, stacks} = flamebearer.v8logToStacks(json);
+    const levels = flamebearer.mergeStacks(stacks);
+    console.timeEnd('process v8 log');
+
+    // console.log('samples: ' + stacks.length);
+    // console.log(JSON.stringify(levels.map(b => b.length)));
+    // console.log('items ' + levels.reduce((memo, b) => memo + b.length / 3, 0));
+
+    // console.log(JSON.stringify({names, levels}));
+}));

@@ -1,0 +1,23 @@
+{
+  "name": "flamebearer",
+  "version": "1.0.0",
+  "description": "Blazing fast flame graphs for V8 and Node",
+  "main": "index.js",
+  "bin": "./bin/flamebearer",
+  "dependencies": {
+    "concat-stream": "^1.6.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "flame graph",
+    "performance",
+    "profiling",
+    "v8",
+    "node"
+  ],
+  "author": "Vladimir Agafonkin",
+  "license": "ISC"
+}
