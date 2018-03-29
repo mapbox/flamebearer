@@ -1,5 +1,7 @@
 'use strict';
 
+console.time('total');
+
 console.time('load');
 const log = require('./gljs.json');
 console.timeEnd('load');
@@ -16,10 +18,14 @@ console.time('merge');
 const levels = merge(stacks);
 console.timeEnd('merge');
 
+console.timeEnd('total');
+
 // console.log(JSON.stringify(levels.map(b => b.length)));
 // console.log('levels ' + levels.reduce((memo, b) => memo + b.length / 3, 0));
 // console.log(JSON.stringify({names, levels}));
 
+// classifications borrowed from:
+// https://github.com/v8/v8/blob/master/tools/profview/profile-utils.js (BSD)
 function codeToName(code) {
     if (!code || !code.type) return '(unknown)';
 
@@ -41,7 +47,7 @@ function codeToName(code) {
             code.kind === 'Handler'
         ) return '(IC) ' + name;
 
-        if (code.kind === 'BytecodeHandler') return '(bytecode) ' + name;
+        if (code.kind === 'BytecodeHandler') return '(bytecode) ~' + name;
         if (code.kind === 'Stub') return '(stub) ' + name;
         if (code.kind === 'Builtin') return '(builtin) ' + name;
         if (code.kind === 'RegExp') return '(regexp) ' + name;
@@ -115,7 +121,7 @@ function merge(stacks) {
             }
 
             levels[level] = levels[level] || [];
-            levels[level].push(start, end, id);
+            levels[level].push(start, end - start + 1, id);
         }
     }
 
