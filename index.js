@@ -1,11 +1,24 @@
-
-const fs = require('fs');
+'use strict';
 
 console.time('load');
-const log = JSON.parse(fs.readFileSync('gljs.json'));
+const log = require('./gljs.json');
 console.timeEnd('load');
 
-const cppNameRe = /[tT] ([^(<]*)/;
+console.time('process');
+const {names, stacks} = v8logToStacks(log);
+console.timeEnd('process');
+
+console.time('sort');
+stacks.sort(compareStacks);
+console.timeEnd('sort');
+
+console.time('merge');
+const levels = merge(stacks);
+console.timeEnd('merge');
+
+// console.log(JSON.stringify(levels.map(b => b.length)));
+// console.log('levels ' + levels.reduce((memo, b) => memo + b.length / 3, 0));
+// console.log(JSON.stringify({names, levels}));
 
 function codeToName(code) {
     if (!code || !code.type) return '(unknown)';
@@ -13,7 +26,7 @@ function codeToName(code) {
     let name = code.name;
 
     if (code.type === 'CPP') {
-        const matches = name.match(cppNameRe);
+        const matches = name.match(/[tT] ([^(<]*)/);
         if (matches) name = matches[1];
         return '(C++) ' + name;
     }
@@ -33,39 +46,38 @@ function codeToName(code) {
         if (code.kind === 'Builtin') return '(builtin) ' + name;
         if (code.kind === 'RegExp') return '(regexp) ' + name;
     }
-
     if (code.type === 'JS') {
         if (name[0] === ' ') name = '(anonymous)' + name;
         if (code.kind === 'Builtin' || code.kind === 'Unopt') return '~' + name;
-        if (code.kind === 'Opt') return '*' + name;
+        if (code.kind === 'Opt') return name;
     }
 
     return '(unknown)';
 }
 
-console.time('process');
-const ticks = [];
-const nameIds = {};
-const names = [];
+function v8logToStacks(log) {
+    const stacks = [];
+    const names = [];
+    const nameIds = {};
 
-for (const tick of log.ticks) {
-    const stack = [];
-    for (let i = tick.s.length; i >= 0; i -= 2) {
-        const code = log.code[tick.s[i]];
-        const name = codeToName(code);
-        let nameId = nameIds[name];
-        if (!nameId) {
-            nameId = nameIds[name] = names.length;
-            names.push(name);
+    for (const tick of log.ticks) {
+        const stack = [];
+        for (let i = tick.s.length; i >= 0; i -= 2) {
+            const code = log.code[tick.s[i]];
+            const name = codeToName(code);
+            let nameId = nameIds[name];
+            if (!nameId) {
+                nameId = nameIds[name] = names.length;
+                names.push(name);
+            }
+            stack.push(nameId);
         }
-        stack.push(nameId);
+        stacks.push(stack);
     }
-    ticks.push(stack);
+    return {names, stacks};
 }
-console.timeEnd('process');
 
-console.time('sort');
-ticks.sort((a, b) => {
+function compareStacks(a, b) {
     const len = Math.min(a.length, b.length);
     for (let i = 0; i < len; i++) {
         const d = a[i] - b[i];
@@ -75,25 +87,11 @@ ticks.sort((a, b) => {
     if (dlen) return dlen;
 
     return 0;
-});
-console.timeEnd('sort');
+}
 
-console.time('merge');
-const boxes = [];
-merge(boxes, ticks);
-console.timeEnd('merge');
-
-// console.log(JSON.stringify(boxes.map(b => b.length)));
-// console.log('boxes ' + boxes.reduce((memo, b) => memo + b.length / 3, 0));
-
-// console.log(JSON.stringify({names, boxes}));
-
-// for (const box of boxes) {
-//     console.log(JSON.stringify(box));
-// }
-
-function merge(boxes, ticks) {
-    const queue = [0, 0, ticks.length - 1];
+function merge(stacks) {
+    const levels = [];
+    const queue = [0, 0, stacks.length - 1];
 
     while (queue.length) {
         const right = queue.pop();
@@ -103,12 +101,12 @@ function merge(boxes, ticks) {
         let i = left;
 
         while (i <= right) {
-            const id = ticks[i][level];
+            const id = stacks[i][level];
 
             const start = i;
             let hasChildren = false;
-            for (; i <= right && ticks[i][level] === id; i++) {
-                if (ticks[i].length > level + 1) hasChildren = true;
+            for (; i <= right && stacks[i][level] === id; i++) {
+                if (stacks[i].length > level + 1) hasChildren = true;
             }
             const end = i;
 
@@ -116,8 +114,10 @@ function merge(boxes, ticks) {
                 queue.unshift(level + 1, start, end - 1);
             }
 
-            boxes[level] = boxes[level] || [];
-            boxes[level].push(start, end, id);
+            levels[level] = levels[level] || [];
+            levels[level].push(start, end, id);
         }
     }
+
+    return levels;
 }
