@@ -1,28 +1,20 @@
 'use strict';
 
-console.time('total');
-
 console.time('load');
 const log = require('./gljs.json');
 console.timeEnd('load');
 
 console.time('process');
 const {names, stacks} = v8logToStacks(log);
+const levels = mergeStacks(stacks);
 console.timeEnd('process');
 
-console.time('sort');
-stacks.sort(compareStacks);
-console.timeEnd('sort');
-
-console.time('merge');
-const levels = merge(stacks);
-console.timeEnd('merge');
-
-console.timeEnd('total');
-
+// console.log('samples: ' + stacks.length);
 // console.log(JSON.stringify(levels.map(b => b.length)));
-// console.log('levels ' + levels.reduce((memo, b) => memo + b.length / 3, 0));
+// console.log('items ' + levels.reduce((memo, b) => memo + b.length / 3, 0));
+
 // console.log(JSON.stringify({names, levels}));
+
 
 // classifications borrowed from:
 // https://github.com/v8/v8/blob/master/tools/profview/profile-utils.js (BSD)
@@ -95,7 +87,9 @@ function compareStacks(a, b) {
     return 0;
 }
 
-function merge(stacks) {
+function mergeStacks(stacks) {
+    stacks.sort(compareStacks);
+
     const levels = [];
     const queue = [0, 0, stacks.length - 1];
 
