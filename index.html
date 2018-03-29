@@ -8,8 +8,9 @@
 html, body { height: 100%; }
 body { font-family: sans-serif; margin: 0; line-height: 1.4; }
 body.hover { background: #cfc; }
-#intro { margin: 1em 2em; }
-#intro h1, #intro p { margin: 15px 0; }
+h1 { margin: 0 30px; line-height: 80px; }
+#intro { margin: 0 30px; }
+#intro p { margin: 0 0 1em; }
 #fire-icon { fill: red; }
 p.code { color: #444; line-height: 1.2; }
 code span { color: #aaa; }
@@ -19,11 +20,11 @@ code span { color: #aaa; }
 </head>
 <body>
 
+<h1>
+    <svg id="fire-icon" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 15 15" style="enable-background:new 0 0 15 15;" xml:space="preserve"><path d="M7.5,0.5L5,4.5l-1.5-2 C2.9452,3.4753,0.8036,5.7924,0.8036,8.3036C0.8036,12.002,3.8017,15,7.5,15s6.6964-2.998,6.6964-6.6964 c0-2.5112-2.1416-4.8283-2.6964-5.8036l-1.5,2L7.5,0.5z M7.5,7c0,0,2.5,2.5618,2.5,4.5c0,0.8371-0.8259,2-2.5,2S5,12.3371,5,11.5 C5,9.6283,7.5,7,7.5,7z"/></svg>
+    flamebearer
+</h1>
 <div id="intro">
-    <h1>
-        <svg id="fire-icon" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 15 15" style="enable-background:new 0 0 15 15;" xml:space="preserve"><path d="M7.5,0.5L5,4.5l-1.5-2 C2.9452,3.4753,0.8036,5.7924,0.8036,8.3036C0.8036,12.002,3.8017,15,7.5,15s6.6964-2.998,6.6964-6.6964 c0-2.5112-2.1416-4.8283-2.6964-5.8036l-1.5,2L7.5,0.5z M7.5,7c0,0,2.5,2.5618,2.5,4.5c0,0.8371-0.8259,2-2.5,2S5,12.3371,5,11.5 C5,9.6283,7.5,7,7.5,7z"/></svg>
-        flamebearer
-    </h1>
     <div id="log">
         <p>Generate a flame graph by <strong>dragging</strong> a JSON V8 log on this page:</p>
 
@@ -71,21 +72,18 @@ body.ondrop = (e) => {
 
     var reader = new FileReader();
     reader.onload = function (event) {
-        logEl.innerHTML = `Loaded ${humanFileSize(event.target.result.length)} in ${now()} ms. `;
+        console.log(`Loaded ${humanFileSize(event.target.result.length)} in ${now()} ms.`);
 
-        requestAnimationFrame(() => {
-            var json = JSON.parse(event.target.result);
-            logEl.innerHTML += `Parsed in ${now()} ms. `;
+        var json = JSON.parse(event.target.result);
+        console.log(`Parsed JSON in ${now()} ms.`);
 
-            requestAnimationFrame(() => {
-                ({names, stacks} = v8logToStacks(json));
-                numTicks = stacks.length;
-                levels = mergeStacks(stacks);
-                logEl.innerHTML += `Processed in ${now()} ms. `;
+        ({names, stacks} = v8logToStacks(json));
+        numTicks = stacks.length;
+        levels = mergeStacks(stacks);
+        console.log(`Processed in ${now()} ms.`);
 
-                requestAnimationFrame(render);
-            });
-        });
+        logEl.innerHTML = '';
+        render();
     };
     reader.readAsText(e.dataTransfer.files[0]);
 
@@ -119,7 +117,8 @@ function render() {
         for (let j = 0; j < level.length; j += 3) {
             const x = level[j] * pxPerTick;
             const y = i * pxPerLevel;
-            const sw = level[j + 1] * pxPerTick;
+            const numBarTicks = level[j + 1];
+            const sw = numBarTicks * pxPerTick;
             // if (sw < 0.1) continue;
             ctx.save();
             ctx.beginPath();
@@ -129,7 +128,7 @@ function render() {
             ctx.fillStyle = '#faa';
             ctx.fill();
 
-            const name = names[level[j + 2]];
+            const name = `${names[level[j + 2]]} (${Math.round(10000 * numBarTicks / numTicks) / 100}%)`;
             // const tw = ctx.measureText(name).width;
             if (sw >= 20) {
                 ctx.fillStyle = 'black';
