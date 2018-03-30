@@ -62,8 +62,21 @@ const hideThreshold = 1;
 const labelThreshold = 20;
 
 if (levels) {
+    init();
+}
+
+function init() {
     introEl.innerHTML = '';
     controlsEl.style.display = 'block';
+
+    // delta-decode bar positions
+    for (const level of levels) {
+        let prev = 0;
+        for (let i = 0; i < level.length; i += 3) {
+            level[i] += prev;
+            prev = level[i] + level[i + 1];
+        }
+    }
     render();
 }
 
@@ -196,10 +209,10 @@ function highlightCurrent(e) {
     canvas.style.cursor = 'pointer';
 
     const level = levels[i];
-    const x = (level[j] - numTicksLeft) * pxPerTick + padding + 0.5;
+    const x = (level[j] - numTicksLeft) * pxPerTick + padding;
     const y = (i - numSkippedLevels) * pxPerLevel;
-    const sw = level[j + 1] * pxPerTick - 1.5;
-    const sh = pxPerLevel - 1;
+    const sw = level[j + 1] * pxPerTick - 0.5;
+    const sh = pxPerLevel - 0.5;
 
     const canvasPos = canvas.getBoundingClientRect();
     highlightEl.style.display = 'block';
@@ -264,9 +277,7 @@ body.ondrop = (e) => {
         levels = mergeStacks(stacks);
         console.timeEnd('Processing stacks');
 
-        introEl.innerHTML = '';
-        controlsEl.style.display = 'block';
-        render();
+        init();
     };
     reader.readAsText(e.dataTransfer.files[0]);
 

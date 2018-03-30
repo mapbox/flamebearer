@@ -107,6 +107,16 @@ function mergeStacks(stacks) {
         }
     }
 
+    // delta-encode bar positions
+    for (const level of levels) {
+        let prev = 0;
+        for (let i = 0; i < level.length; i += 3) {
+            const right = level[i] + level[i + 1];
+            level[i] -= prev;
+            prev = right;
+        }
+    }
+
     return levels;
 }
 
