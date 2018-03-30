@@ -31,7 +31,7 @@ input.pipe(concat(function(buf) {
     const src = fs
         .readFileSync(path.join(__dirname, '../index.html'), 'utf8')
         .toString()
-        .replace('<script src="index.js"></script>', '')
+        .replace(/<!-- BIN_REMOVE_START -->.+<!-- BIN_REMOVE_END -->/s, '')
         .replace('/* BIN_PLACEHOLDER */',
             `names = ${JSON.stringify(names)}\n` +
             `levels = ${JSON.stringify(levels)}\n` +
