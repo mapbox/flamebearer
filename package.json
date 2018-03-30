@@ -19,7 +19,7 @@
   "eslintConfig": {
     "extends": "mourner",
     "plugins": [
-        "html"
+      "html"
     ]
   },
   "keywords": [
