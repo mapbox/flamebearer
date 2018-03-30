@@ -13,6 +13,9 @@
     "eslint-config-mourner": "^2.0.3",
     "eslint-plugin-html": "^4.0.2"
   },
+  "engines": {
+    "node": ">=8.5.0"
+  },
   "scripts": {
     "test": "eslint index.js index.html bin/flamebearer"
   },
