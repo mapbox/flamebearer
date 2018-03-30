@@ -4,6 +4,11 @@
   "description": "Blazing fast flame graphs for V8 and Node",
   "main": "index.js",
   "bin": "./bin/flamebearer",
+  "files": [
+    "bin",
+    "index.html",
+    "index.js"
+  ],
   "dependencies": {
     "concat-stream": "^1.6.2",
     "opn": "^5.3.0"
