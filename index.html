@@ -93,76 +93,80 @@ body.ondrop = (e) => {
     return false;
 };
 
+const padding = 2;
+const pxPerLevel = 18;
+const collapseThreshold = 5;
+const hideThreshold = 1;
+const labelThreshold = 20;
+
+ctx.lineWidth = 1;
+ctx.globalCompositeOperation = 'destination-over';
+ctx.font = `10px/${pxPerLevel}px sans-serif`;
+
 function render() {
-    const pxPerLevel = 18;
     const w = canvas.width = canvas.clientWidth;
     const h = canvas.height = pxPerLevel * levels.length;
-    const pxPerTick = w / numTicks;
+    const pxPerTick = (w - 2 * padding) / numTicks;
 
     canvas.style.height = canvas.height + 'px';
-
-    ctx.globalCompositeOperation = 'destination-over';
 
     if (devicePixelRatio > 1) {
         canvas.width *= 2;
         canvas.height *= 2;
         ctx.scale(2, 2);
     }
-
-    let numRects = 0;
-
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'white';
-    ctx.font = `10px/${pxPerLevel}px sans-serif`;
+    ctx.textBaseline = 'middle';
 
     for (let i = 0; i < levels.length; i++) {
         const level = levels[i];
 
         for (let j = 0; j < level.length; j += 3) {
-            const x = level[j] * pxPerTick;
+            const barIndex = level[j];
+            const x = barIndex * pxPerTick + padding;
             const y = i * pxPerLevel;
             let numBarTicks = level[j + 1];
 
             let collapsed = false;
 
-            if (numBarTicks * pxPerTick <= 5) {
-                numBarTicks = level[j + 1];
+            if (numBarTicks * pxPerTick <= collapseThreshold) {
                 collapsed = true;
 
-                j += 3;
-                while (j < level.length && (level[j - 3] + level[j - 2] === level[j]) && (level[j + 1] * pxPerTick <= 5)) {
-                    numBarTicks += level[j + 1];
+                while (
+                    j < level.length - 3 &&
+                    barIndex + numBarTicks === level[j + 3] &&
+                    level[j + 4] * pxPerTick <= collapseThreshold
+                ) {
                     j += 3;
+                    numBarTicks += level[j + 1];
                 }
-                j -= 3;
             }
 
-            const sw = numBarTicks * pxPerTick;
+            const sw = numBarTicks * pxPerTick - 0.5;
+            if (sw < hideThreshold) continue;
 
-            if (sw < 1.5) continue;
+            const sh = pxPerLevel - 0.5;
+            const ratio = numBarTicks / numTicks;
 
             ctx.beginPath();
-            ctx.rect(x, y, sw - 0.5, pxPerLevel - 0.5);
+            ctx.rect(x, y, sw, sh);
+
             if (!collapsed) {
+                ctx.strokeStyle = 'white';
                 ctx.stroke();
-                ctx.fillStyle = '#fa9';
+                ctx.fillStyle = '#ffaa99';
             } else {
-                // ctx.fillStyle = `hsl(0,0%,${100 * i / levels.length}%)`
                 ctx.fillStyle = '#ffaa9988';
             }
             ctx.fill();
 
-            if (!collapsed && sw >= 20) {
+            if (!collapsed && sw >= labelThreshold) {
                 ctx.save();
                 ctx.clip();
-                const name = `${names[level[j + 2]]} (${Math.round(10000 * numBarTicks / numTicks) / 100}%)`;
+                const name = `${names[level[j + 2]]} (${Math.round(10000 * ratio) / 100}%)`;
                 ctx.fillStyle = 'black';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(name, x + 1, y + pxPerLevel / 2);
+                ctx.fillText(name, x + 1, y + sh / 2);
                 ctx.restore();
             }
-
-            numRects++;
         }
     }
 }
