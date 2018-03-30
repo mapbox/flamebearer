@@ -4,7 +4,9 @@ _A work in progress._
 
 Blazing fast [flame graph](http://www.brendangregg.com/flamegraphs.html) tool for Node and V8,
 used to visualize and explore performance profiling results.
-Designed to handle profiles of any size while remaining responsive.
+Designed to handle profiles of any size while remaining responsive and lightweight.
+
+## [Example graph](https://mapbox.github.io/flamebearer/examples/rollup.html)
 
 ## Usage
 
@@ -18,7 +20,7 @@ $ npm install -g flamebearer
 $ node --prof app.js
 
 # generate flamegraph.html from a V8 log and open it in the browser
-$ node --prof-process --preprocess isolate*.log | flamebearer
+$ node --prof-process --preprocess -j isolate*.log | flamebearer
 ```
 
 ## Thanks
