@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+'use strict';
 
 const fs = require('fs');
 const path = require('path');
@@ -8,12 +9,13 @@ const flamebearer = require('../');
 
 var input = process.stdin.isTTY ? fs.createReadStream(process.argv[2]) : process.stdin;
 
-input.pipe(concat(function(buf) {
+input.pipe(concat(function (buf) {
     console.time('Parsed JSON in');
     let json = {};
     try {
         json = JSON.parse(buf.toString('utf8'));
     } catch (e) {
+        // noop
     }
     if (!json.code || !json.ticks) {
         console.log('Invalid input; expected a V8 log in JSON format. Produce one with:');
@@ -31,20 +33,15 @@ input.pipe(concat(function(buf) {
     const src = fs
         .readFileSync(path.join(__dirname, '../index.html'), 'utf8')
         .toString()
-        .replace(/<!-- BIN_REMOVE_START -->.+<!-- BIN_REMOVE_END -->/s, '')
+        .split('/* BIN_SPLIT */')
+        .filter((str, i) => i % 2 === 0)
+        .join('')
         .replace('/* BIN_PLACEHOLDER */',
             `names = ${JSON.stringify(names)}\n` +
-            `levels = ${JSON.stringify(levels)}\n` +
-            `numTicks = ${numTicks}\n`);
+            `levels = ${JSON.stringify(levels)}\n`);
 
     fs.writeFileSync('flamegraph.html', src);
     console.log('Saved to flamegraph.html.');
 
     opn('flamegraph.html', {wait: false});
-
-    // console.log('samples: ' + stacks.length);
-    // console.log(JSON.stringify(levels.map(b => b.length)));
-    // console.log('items ' + levels.reduce((memo, b) => memo + b.length / 3, 0));
-
-    // console.log(JSON.stringify({names, levels}));
 }));

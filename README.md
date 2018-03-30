@@ -25,3 +25,4 @@ $ node --prof-process --preprocess isolate*.log | flamebearer
 
 - [Brendan Gregg](http://brendangregg.com/) for creating the [concept](https://queue.acm.org/detail.cfm?id=2927301) and maintaining the [reference implementation](http://brendangregg.com/flamegraphs.html).
 - [David Mark Clements](https://github.com/davidmarkclements) and [Matteo Collina](https://github.com/mcollina) for creating [0x](https://github.com/davidmarkclements/0x) which inspired this project.
+- [Bernard Cornwell](http://www.bernardcornwell.net/books/) for the amazing books this project took its name from.

@@ -29,12 +29,14 @@
 </div>
 <canvas id="canvas" height="0"></canvas>
 
+<!-- /* BIN_SPLIT */ --><script src="index.js"></script><!-- /* BIN_SPLIT */ -->
 <script>
+'use strict';
 const introEl = document.getElementById('intro');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
-let names, stacks, levels, numTicks;
+let names, stacks, levels;
 
 /* BIN_PLACEHOLDER */
 
@@ -50,10 +52,8 @@ if (levels) {
 }
 
 function render() {
-    const w = canvas.width = canvas.clientWidth;
-    const h = canvas.height = pxPerLevel * levels.length;
-    const pxPerTick = (w - 2 * padding) / numTicks;
-
+    const graphWidth = canvas.width = canvas.clientWidth;
+    canvas.height = pxPerLevel * levels.length;
     canvas.style.height = canvas.height + 'px';
 
     if (devicePixelRatio > 1) {
@@ -61,6 +61,9 @@ function render() {
         canvas.height *= 2;
         ctx.scale(2, 2);
     }
+
+    const numTicks = levels[0][levels[0].length - 3] + levels[0][levels[0].length - 2];
+    const pxPerTick = (graphWidth - 2 * padding) / numTicks;
 
     ctx.textBaseline = 'middle';
     ctx.font = '10px Tahoma, sans-serif';
@@ -127,18 +130,16 @@ function render() {
 window.onresize = () => {
     if (levels) render();
 };
-</script>
 
-<!-- BIN_REMOVE_START -->
-<script src="index.js"></script>
-<script>
+/* BIN_SPLIT */
+/* global mergeStacks, v8logToStacks */
 const body = document.body;
 
 body.ondragover = () => {
     body.classList.add('hover');
     return false;
 };
-body.ondragleave = (e) => {
+body.ondragleave = () => {
     body.classList.remove('hover');
 };
 body.ondrop = (e) => {
@@ -162,7 +163,6 @@ body.ondrop = (e) => {
 
         console.time('Processing stacks');
         ({names, stacks} = v8logToStacks(json));
-        numTicks = stacks.length;
         levels = mergeStacks(stacks);
         console.timeEnd('Processing stacks');
 
@@ -179,7 +179,7 @@ function humanFileSize(size) {
     var i = Math.floor(Math.log(size) / Math.log(1024));
     return Math.round(100 * (size / Math.pow(1024, i))) / 100 + ' ' + ['B', 'kB', 'MB', 'GB'][i];
 }
+/* BIN_SPLIT */
 </script>
-<!-- BIN_REMOVE_END -->
 </body>
 </html>
