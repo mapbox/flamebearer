@@ -171,6 +171,7 @@ canvas.onclick = (e) => {
     numSkippedLevels = i;
     rangeMin = levels[i][j] / numTicks;
     rangeMax = (levels[i][j] + levels[i][j + 1]) / numTicks;
+    window.scrollTo(0, 0);
     render();
     highlightCurrent(e);
 };
