@@ -15,20 +15,16 @@
   },
   "devDependencies": {
     "eslint": "^4.19.1",
-    "eslint-config-mourner": "^2.0.3",
-    "eslint-plugin-html": "^4.0.2"
+    "eslint-config-mourner": "^2.0.3"
   },
   "engines": {
     "node": ">=8.5.0"
   },
   "scripts": {
-    "test": "eslint index.js index.html bin/flamebearer"
+    "test": "eslint index.js viz.js bin/flamebearer"
   },
   "eslintConfig": {
-    "extends": "mourner",
-    "plugins": [
-      "html"
-    ]
+    "extends": "mourner"
   },
   "keywords": [
     "flame graph",

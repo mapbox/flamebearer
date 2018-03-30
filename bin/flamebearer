@@ -29,9 +29,12 @@ input.pipe(concat(function (buf) {
     const levels = flamebearer.mergeStacks(stacks);
     console.timeEnd('Processed V8 log in');
 
+    const vizSrc = fs.readFileSync(path.join(__dirname, '../viz.js'), 'utf8');
     const src = fs
         .readFileSync(path.join(__dirname, '../index.html'), 'utf8')
         .toString()
+        .split('<script src="viz.js"></script>')
+        .join(`<script>${vizSrc}</script>`)
         .split('/* BIN_SPLIT */')
         .filter((str, i) => i % 2 === 0)
         .join('')
