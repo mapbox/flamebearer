@@ -35,8 +35,8 @@ input.pipe(concat(function (buf) {
         .split('/* BIN_SPLIT */')
         .filter((str, i) => i % 2 === 0)
         .join('')
-        .replace('/* BIN_PLACEHOLDER */',
-            `names = ${JSON.stringify(names)};\n` +
+        .split('/* BIN_PLACEHOLDER */')
+        .join(`names = ${JSON.stringify(names)};\n` +
             `levels = ${JSON.stringify(levels)};\n` +
             `numTicks = ${stacks.length};`);
 
