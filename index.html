@@ -15,6 +15,7 @@
     code span { color: #aaa; }
     #canvas { width: 100%; }
     #controls { position: absolute; top: 50px; right: 20px; display: none; }
+    #highlight { position: fixed; pointer-events: none; background: #ffffff30;}
 </style>
 </head>
 <body>
@@ -24,6 +25,7 @@
     <button id="back">Back</button>
     <button id="reset">Reset</button>
 </div>
+<div id="highlight"></div>
 <div id="intro">
     <p>Generate a flame graph by <strong>dragging</strong> a JSON V8 log on this page:</p>
     <p class="code"><code>
@@ -159,7 +161,7 @@ function xyToBar(x, y) {
         }
     }
 
-    return null;
+    return {};
 }
 
 canvas.onclick = (e) => {
@@ -169,16 +171,51 @@ canvas.onclick = (e) => {
     rangeMin = levels[i][j] / numTicks;
     rangeMax = (levels[i][j] + levels[i][j + 1]) / numTicks;
     render();
+    highlightCurrent(e);
 };
 
-backEl.onclick = (e) => {
+let highlightEl = document.getElementById('highlight');
+
+canvas.onmousemove = highlightCurrent;
+canvas.onmouseout = () => {
+    canvas.style.cursor = '';
+    highlightEl.style.display = 'none';
+};
+
+function highlightCurrent(e) {
+    const {i, j} = xyToBar(e.layerX, e.layerY);
+
+    if (i === undefined || e.layerX < padding || e.layerX > graphWidth - padding) {
+        canvas.style.cursor = '';
+        highlightEl.style.display = 'none';
+        return;
+    }
+
+    canvas.style.cursor = 'pointer';
+
+    const level = levels[i];
+    const x = (level[j] - numTicksLeft) * pxPerTick + padding + 0.5;
+    const y = (i - numSkippedLevels) * pxPerLevel;
+    const sw = level[j + 1] * pxPerTick - 1.5;
+    const sh = pxPerLevel - 1;
+
+    const canvasPos = canvas.getBoundingClientRect();
+    highlightEl.style.display = 'block';
+    highlightEl.style.left = (canvasPos.left + x) + 'px';
+    highlightEl.style.top = (canvasPos.top + y) + 'px';
+    highlightEl.style.width = sw + 'px';
+    highlightEl.style.height = sh + 'px';
+}
+
+backEl.onclick = () => {
     ({numSkippedLevels, rangeMin, rangeMax} = zoomPath.pop());
     render();
 };
-document.getElementById('reset').onclick = (e) => {
+document.getElementById('reset').onclick = () => {
     numSkippedLevels = 0;
     rangeMin = 0;
     rangeMax = 1;
+    zoomPath = [];
     render();
 };
 
