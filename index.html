@@ -153,9 +153,13 @@ function render() {
             if (!collapsed) {
                 ctx.strokeStyle = 'white';
                 ctx.stroke();
-                ctx.fillStyle = '#ffaa99';
+                const intensity = Math.min(1, ratio * Math.pow(1.17, i));
+                const h = 50 - 50 * intensity;
+                const s = 1;
+                const l = 0.65 + 0.05 * intensity;
+                ctx.fillStyle = `hsl(${h}, ${s * 100}%, ${l * 100}%)`;
             } else {
-                ctx.fillStyle = '#ffaa9988';
+                ctx.fillStyle = '#eee';
             }
             ctx.fill();
 
