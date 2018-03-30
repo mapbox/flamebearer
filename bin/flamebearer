@@ -1,20 +1,46 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
+const path = require('path');
 const concat = require('concat-stream');
+const opn = require('opn');
 const flamebearer = require('../');
 
 var input = process.stdin.isTTY ? fs.createReadStream(process.argv[2]) : process.stdin;
 
 input.pipe(concat(function(buf) {
-    console.time('parse JSON');
-    const json = JSON.parse(buf.toString('utf8'));
-    console.timeEnd('parse JSON');
+    console.time('Parsed JSON in');
+    let json = {};
+    try {
+        json = JSON.parse(buf.toString('utf8'));
+    } catch (e) {
+    }
+    if (!json.code || !json.ticks) {
+        console.log('Invalid input; expected a V8 log in JSON format. Produce one with:');
+        console.log('node --prof-process --preprocess isolate*.log');
+        return;
+    }
+    console.timeEnd('Parsed JSON in');
 
-    console.time('process v8 log');
+    console.time('Processed V8 log in');
     const {names, stacks} = flamebearer.v8logToStacks(json);
     const levels = flamebearer.mergeStacks(stacks);
-    console.timeEnd('process v8 log');
+    const numTicks = stacks.length;
+    console.timeEnd('Processed V8 log in');
+
+    const src = fs
+        .readFileSync(path.join(__dirname, '../index.html'), 'utf8')
+        .toString()
+        .replace('<script src="index.js"></script>', '')
+        .replace('/* BIN_PLACEHOLDER */',
+            `names = ${JSON.stringify(names)}\n` +
+            `levels = ${JSON.stringify(levels)}\n` +
+            `numTicks = ${numTicks}\n`);
+
+    fs.writeFileSync('flamegraph.html', src);
+    console.log('Saved to flamegraph.html.');
+
+    opn('flamegraph.html', {wait: false});
 
     // console.log('samples: ' + stacks.length);
     // console.log(JSON.stringify(levels.map(b => b.length)));
