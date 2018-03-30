@@ -27,7 +27,6 @@ input.pipe(concat(function (buf) {
     console.time('Processed V8 log in');
     const {names, stacks} = flamebearer.v8logToStacks(json);
     const levels = flamebearer.mergeStacks(stacks);
-    const numTicks = stacks.length;
     console.timeEnd('Processed V8 log in');
 
     const src = fs
@@ -37,8 +36,9 @@ input.pipe(concat(function (buf) {
         .filter((str, i) => i % 2 === 0)
         .join('')
         .replace('/* BIN_PLACEHOLDER */',
-            `names = ${JSON.stringify(names)}\n` +
-            `levels = ${JSON.stringify(levels)}\n`);
+            `names = ${JSON.stringify(names)};\n` +
+            `levels = ${JSON.stringify(levels)};\n` +
+            `numTicks = ${stacks.length};`);
 
     fs.writeFileSync('flamegraph.html', src);
     console.log('Saved to flamegraph.html.');

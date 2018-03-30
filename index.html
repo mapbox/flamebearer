@@ -14,11 +14,16 @@
     p.code { color: #444; line-height: 1.2; }
     code span { color: #aaa; }
     #canvas { width: 100%; }
+    #controls { position: absolute; top: 50px; right: 20px; display: none; }
 </style>
 </head>
 <body>
 
 <h1><svg id="fire-icon" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 15 15" style="enable-background:new 0 0 15 15;" xml:space="preserve"><path d="M7.5,0.5L5,4.5l-1.5-2 C2.9452,3.4753,0.8036,5.7924,0.8036,8.3036C0.8036,12.002,3.8017,15,7.5,15s6.6964-2.998,6.6964-6.6964 c0-2.5112-2.1416-4.8283-2.6964-5.8036l-1.5,2L7.5,0.5z M7.5,7c0,0,2.5,2.5618,2.5,4.5c0,0.8371-0.8259,2-2.5,2S5,12.3371,5,11.5 C5,9.6283,7.5,7,7.5,7z"/></svg> flamebearer</h1>
+<div id="controls">
+    <button id="back">Back</button>
+    <button id="reset">Reset</button>
+</div>
 <div id="intro">
     <p>Generate a flame graph by <strong>dragging</strong> a JSON V8 log on this page:</p>
     <p class="code"><code>
@@ -33,14 +38,22 @@
 <script>
 'use strict';
 const introEl = document.getElementById('intro');
+const controlsEl = document.getElementById('controls');
+const backEl = document.getElementById('back');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
-let names, stacks, levels;
+let names, levels, numTicks;
 
 /* BIN_PLACEHOLDER */
 
-const padding = 2;
+let rangeMin = 0;
+let rangeMax = 1;
+let numSkippedLevels = 0;
+let graphWidth, numTicksLeft, numTicksRight, pxPerTick;
+let zoomPath = [];
+
+const padding = 20;
 const pxPerLevel = 18;
 const collapseThreshold = 5;
 const hideThreshold = 1;
@@ -48,12 +61,15 @@ const labelThreshold = 20;
 
 if (levels) {
     introEl.innerHTML = '';
+    controlsEl.style.display = 'block';
     render();
 }
 
 function render() {
-    const graphWidth = canvas.width = canvas.clientWidth;
-    canvas.height = pxPerLevel * levels.length;
+    backEl.disabled = numSkippedLevels === 0 && rangeMin === 0 && rangeMax === 1;
+
+    graphWidth = canvas.width = canvas.clientWidth;
+    canvas.height = pxPerLevel * (levels.length - numSkippedLevels);
     canvas.style.height = canvas.height + 'px';
 
     if (devicePixelRatio > 1) {
@@ -62,19 +78,20 @@ function render() {
         ctx.scale(2, 2);
     }
 
-    const numTicks = levels[0][levels[0].length - 3] + levels[0][levels[0].length - 2];
-    const pxPerTick = (graphWidth - 2 * padding) / numTicks;
+    numTicksLeft = numTicks * rangeMin;
+    numTicksRight = numTicks * rangeMax;
+    pxPerTick = (graphWidth - 2 * padding) / (numTicksRight - numTicksLeft);
 
     ctx.textBaseline = 'middle';
     ctx.font = '10px Tahoma, sans-serif';
     ctx.strokeStyle = 'white';
 
-    for (let i = 0; i < levels.length; i++) {
-        const level = levels[i];
+    for (let i = 0; i < levels.length - numSkippedLevels; i++) {
+        const level = levels[numSkippedLevels + i];
 
         for (let j = 0; j < level.length; j += 3) {
             const barIndex = level[j];
-            const x = barIndex * pxPerTick + padding;
+            const x = (barIndex - numTicksLeft) * pxPerTick + padding;
             const y = i * pxPerLevel;
             let numBarTicks = level[j + 1];
 
@@ -94,17 +111,21 @@ function render() {
             }
 
             const sw = numBarTicks * pxPerTick - 0.5;
+
+            if (x < padding) continue;
+            if (x + sw + padding > graphWidth) continue;
             if (sw < hideThreshold) continue;
 
             const sh = pxPerLevel - 0.5;
             const ratio = numBarTicks / numTicks;
+            const localRatio = numBarTicks / (numTicksRight - numTicksLeft);
 
             ctx.beginPath();
             ctx.rect(x, y, sw, sh);
 
             if (!collapsed) {
                 ctx.stroke();
-                const intensity = Math.min(1, ratio * Math.pow(1.17, i));
+                const intensity = Math.min(1, localRatio * Math.pow(1.16, i));
                 const h = 50 - 50 * intensity;
                 const l = 65 + 7 * intensity;
                 ctx.fillStyle = `hsl(${h}, 100%, ${l}%)`;
@@ -118,12 +139,48 @@ function render() {
                 ctx.clip();
                 const name = `${names[level[j + 2]]} (${Math.round(10000 * ratio) / 100}%)`;
                 ctx.fillStyle = 'black';
-                ctx.fillText(name, x + 1, y + sh / 2);
+                ctx.fillText(name, Math.max(x, padding) + 1, y + sh / 2);
                 ctx.restore();
             }
         }
     }
 }
+
+function xyToBar(x, y) {
+    const i = Math.floor(y / pxPerLevel) + numSkippedLevels;
+    const level = levels[i];
+
+    // TODO binary search
+    for (let j = 0; j < level.length; j += 3) {
+        const x0 = (level[j] - numTicksLeft) * pxPerTick + padding;
+        const x1 = (level[j] + level[j + 1] - numTicksLeft) * pxPerTick + padding;
+        if (x1 - x0 > collapseThreshold && x >= x0 && x <= x1) {
+            return {i, j};
+        }
+    }
+
+    return null;
+}
+
+canvas.onclick = (e) => {
+    const {i, j} = xyToBar(e.layerX, e.layerY);
+    zoomPath.push({numSkippedLevels, rangeMin, rangeMax});
+    numSkippedLevels = i;
+    rangeMin = levels[i][j] / numTicks;
+    rangeMax = (levels[i][j] + levels[i][j + 1]) / numTicks;
+    render();
+};
+
+backEl.onclick = (e) => {
+    ({numSkippedLevels, rangeMin, rangeMax} = zoomPath.pop());
+    render();
+};
+document.getElementById('reset').onclick = (e) => {
+    numSkippedLevels = 0;
+    rangeMin = 0;
+    rangeMax = 1;
+    render();
+};
 
 // (function frame() { if (levels) render(); requestAnimationFrame(frame); })();
 
@@ -162,11 +219,14 @@ body.ondrop = (e) => {
         console.timeEnd('Parsing JSON');
 
         console.time('Processing stacks');
+        let stacks;
         ({names, stacks} = v8logToStacks(json));
+        numTicks = stacks.length;
         levels = mergeStacks(stacks);
         console.timeEnd('Processing stacks');
 
         introEl.innerHTML = '';
+        controlsEl.style.display = 'block';
         render();
     };
     reader.readAsText(e.dataTransfer.files[0]);
