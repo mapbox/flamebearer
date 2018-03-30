@@ -165,7 +165,7 @@ function xyToBar(x, y) {
 }
 
 canvas.onclick = (e) => {
-    const {i, j} = xyToBar(e.layerX, e.layerY);
+    const {i, j} = xyToBar(e.offsetX, e.offsetY);
     if (i === undefined || levels[i][j + 1] * pxPerTick <= collapseThreshold) return;
     zoomPath.push({numSkippedLevels, rangeMin, rangeMax});
     numSkippedLevels = i;
@@ -179,15 +179,15 @@ canvas.onclick = (e) => {
 let highlightEl = document.getElementById('highlight');
 
 canvas.onmousemove = highlightCurrent;
-canvas.onmouseout = () => {
+canvas.onmouseout = window.onscroll = () => {
     canvas.style.cursor = '';
     highlightEl.style.display = 'none';
 };
 
 function highlightCurrent(e) {
-    const {i, j} = xyToBar(e.layerX, e.layerY);
+    const {i, j} = xyToBar(e.offsetX, e.offsetY);
 
-    if (i === undefined || e.layerX < padding || e.layerX > graphWidth - padding) {
+    if (i === undefined || e.offsetX < padding || e.offsetX > graphWidth - padding) {
         canvas.style.cursor = '';
         highlightEl.style.display = 'none';
         return;
