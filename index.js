@@ -2,7 +2,7 @@
 
 // classifications borrowed from:
 // https://github.com/v8/v8/blob/master/tools/profview/profile-utils.js (BSD)
-function codeToName(code) {
+function codeToName(code, sharedPath) {
     if (!code || !code.type) return '(unknown)';
 
     let name = code.name;
@@ -29,6 +29,7 @@ function codeToName(code) {
         if (code.kind === 'RegExp') return '(regexp) ' + name;
     }
     if (code.type === 'JS') {
+        if (sharedPath) name = name.replace(sharedPath, './');
         if (name[0] === ' ') name = '(anonymous)' + name;
         if (code.kind === 'Builtin' || code.kind === 'Unopt') return '~' + name;
         if (code.kind === 'Opt') return name;
@@ -37,16 +38,38 @@ function codeToName(code) {
     return '(unknown)';
 }
 
+function getSharedStringPart(str1, str2) {
+    let shared = '';
+    const len = Math.min(str1.length, str2.length);
+    for (let i = 0; i < len; i++) {
+        if (str1[i] === str2[i]) shared += str1[i];
+        else break;
+    }
+    return shared;
+}
+
 function v8logToStacks(log) {
     const stacks = [];
     const names = [];
     const nameIds = {};
 
+    // find a common path in JS names (to make them shorter)
+    let sharedPath;
+    for (const code of log.code) {
+        if (code && code.type === 'JS') {
+            const matches = code.name.match(/\S* (\/\S+\/)/);
+            if (matches) {
+                sharedPath = sharedPath ? getSharedStringPart(sharedPath, matches[1]) : matches[1];
+                if (!sharedPath) break;
+            }
+        }
+    }
+
     for (const tick of log.ticks) {
         const stack = [];
         for (let i = tick.s.length; i >= 0; i -= 2) {
             const code = log.code[tick.s[i]];
-            const name = codeToName(code);
+            const name = codeToName(code, sharedPath);
             let nameId = nameIds[name];
             if (!nameId) {
                 nameId = nameIds[name] = names.length;
