@@ -166,6 +166,7 @@ function xyToBar(x, y) {
 
 canvas.onclick = (e) => {
     const {i, j} = xyToBar(e.layerX, e.layerY);
+    if (i === undefined || levels[i][j + 1] * pxPerTick <= collapseThreshold) return;
     zoomPath.push({numSkippedLevels, rangeMin, rangeMax});
     numSkippedLevels = i;
     rangeMin = levels[i][j] / numTicks;
