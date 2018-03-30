@@ -29,7 +29,7 @@
 <div id="intro">
     <p>Generate a flame graph by <strong>dragging</strong> a JSON V8 log on this page:</p>
     <p class="code"><code>
-        node --prof app.js <span># profile your app</span><br>
+        node --prof app.js <span># profile your app (Node v8.5+ required)</span><br>
         node --prof-process --preprocess -j isolate*.log > v8.json <span># generate a V8 log</span><br>
         <span># then drag and drop the resulting file here</span>
     </code></p>
