@@ -22,7 +22,6 @@
 
 <h1><svg id="fire-icon" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 15 15" style="enable-background:new 0 0 15 15;" xml:space="preserve"><path d="M7.5,0.5L5,4.5l-1.5-2 C2.9452,3.4753,0.8036,5.7924,0.8036,8.3036C0.8036,12.002,3.8017,15,7.5,15s6.6964-2.998,6.6964-6.6964 c0-2.5112-2.1416-4.8283-2.6964-5.8036l-1.5,2L7.5,0.5z M7.5,7c0,0,2.5,2.5618,2.5,4.5c0,0.8371-0.8259,2-2.5,2S5,12.3371,5,11.5 C5,9.6283,7.5,7,7.5,7z"/></svg> flamebearer</h1>
 <div id="controls">
-    <button id="back">Back</button>
     <button id="reset">Reset</button>
 </div>
 <div id="highlight"></div>
@@ -30,11 +29,10 @@
 <canvas id="canvas" height="0"></canvas>
 
 <!--  -->
-<script>
-'use strict';
+<script>'use strict';
+
 const introEl = document.getElementById('intro');
 const controlsEl = document.getElementById('controls');
-const backEl = document.getElementById('back');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
@@ -48,7 +46,6 @@ let rangeMin = 0;
 let rangeMax = 1;
 let numSkippedLevels = 0;
 let graphWidth, numTicksLeft, numTicksRight, pxPerTick;
-let zoomPath = [];
 
 const padding = 20;
 const pxPerLevel = 18;
@@ -72,11 +69,42 @@ function init() {
             prev = level[i] + level[i + 1];
         }
     }
+
+    updateFromHash();
     render();
 }
 
+window.onhashchange = () => {
+    updateFromHash();
+    render();
+};
+canvas.onclick = (e) => {
+    const {i, j} = xyToBar(e.offsetX, e.offsetY);
+    if (i === undefined) return;
+    window.location.hash = [i, j].join(',');
+    removeHighlight();
+};
+document.getElementById('reset').onclick = () => {
+    window.location.hash = '';
+};
+window.onresize = render;
+
+function updateFromHash() {
+    const [i, j] = window.location.hash.substr(1).split(',').map(Number);
+
+    if (!isNaN(i) && !isNaN(j)) {
+        numSkippedLevels = i;
+        rangeMin = levels[i][j] / numTicks;
+        rangeMax = (levels[i][j] + levels[i][j + 1]) / numTicks;
+    } else {
+        numSkippedLevels = 0;
+        rangeMin = 0;
+        rangeMax = 1;
+    }
+}
+
 function render() {
-    backEl.disabled = numSkippedLevels === 0 && rangeMin === 0 && rangeMax === 1;
+    if (!levels) return;
 
     graphWidth = canvas.width = canvas.clientWidth;
     canvas.height = pxPerLevel * (levels.length - numSkippedLevels);
@@ -147,7 +175,7 @@ function render() {
             if (!collapsed && sw >= labelThreshold) {
                 ctx.save();
                 ctx.clip();
-                const name = `${names[level[j + 2]]} (${Math.round(10000 * ratio) / 100}%)`;
+                const name = `${names[level[j + 2]]} (${Math.round(10000 * ratio) / 100}%, ${numBarTicks} of ${numTicks} samples)`;
                 ctx.fillStyle = 'black';
                 ctx.fillText(name, Math.max(x, padding) + 1, y + sh / 2);
                 ctx.restore();
@@ -172,32 +200,21 @@ function xyToBar(x, y) {
     return {};
 }
 
-canvas.onclick = (e) => {
-    const {i, j} = xyToBar(e.offsetX, e.offsetY);
-    if (i === undefined || levels[i][j + 1] * pxPerTick <= collapseThreshold) return;
-    zoomPath.push({numSkippedLevels, rangeMin, rangeMax});
-    numSkippedLevels = i;
-    rangeMin = levels[i][j] / numTicks;
-    rangeMax = (levels[i][j] + levels[i][j + 1]) / numTicks;
-    window.scrollTo(0, 0);
-    render();
-    highlightCurrent(e);
-};
-
 let highlightEl = document.getElementById('highlight');
 
 canvas.onmousemove = highlightCurrent;
-canvas.onmouseout = window.onscroll = () => {
+canvas.onmouseout = window.onscroll = removeHighlight;
+
+function removeHighlight() {
     canvas.style.cursor = '';
     highlightEl.style.display = 'none';
-};
+}
 
 function highlightCurrent(e) {
     const {i, j} = xyToBar(e.offsetX, e.offsetY);
 
     if (i === undefined || e.offsetX < padding || e.offsetX > graphWidth - padding) {
-        canvas.style.cursor = '';
-        highlightEl.style.display = 'none';
+        removeHighlight();
         return;
     }
 
@@ -217,23 +234,7 @@ function highlightCurrent(e) {
     highlightEl.style.height = sh + 'px';
 }
 
-backEl.onclick = () => {
-    ({numSkippedLevels, rangeMin, rangeMax} = zoomPath.pop());
-    render();
-};
-document.getElementById('reset').onclick = () => {
-    numSkippedLevels = 0;
-    rangeMin = 0;
-    rangeMax = 1;
-    zoomPath = [];
-    render();
-};
-
 // (function frame() { if (levels) render(); requestAnimationFrame(frame); })();
-
-window.onresize = () => {
-    if (levels) render();
-};
 
 
 </script>
