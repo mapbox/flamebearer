@@ -44,7 +44,12 @@ input.pipe(concat(function (buf) {
             `numTicks = ${stacks.length};`);
 
     fs.writeFileSync('flamegraph.html', src);
-    console.log('Saved to flamegraph.html.');
+    console.log(`Saved to flamegraph.html (${humanFileSize(src.length)}). Opening...`);
 
     opn('flamegraph.html', {wait: false});
 }));
+
+function humanFileSize(size) {
+    var i = Math.floor(Math.log(size) / Math.log(1024));
+    return Math.round(100 * (size / Math.pow(1024, i))) / 100 + ' ' + ['B', 'kB', 'MB'][i];
+}

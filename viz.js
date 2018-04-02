@@ -25,7 +25,7 @@ if (levels) {
 }
 
 function init() {
-    introEl.innerHTML = '';
+    document.body.classList.add('loaded');
     controlsEl.style.display = 'block';
 
     // delta-decode bar positions
@@ -210,7 +210,6 @@ body.ondragleave = () => {
 };
 body.ondrop = (e) => {
     body.classList.remove('hover');
-    body.classList.add('loaded');
 
     canvas.height = 0;
 
@@ -221,7 +220,6 @@ body.ondrop = (e) => {
     var reader = new FileReader();
     reader.onload = function (event) {
         console.timeEnd('Loading');
-        console.log(`Loaded ${humanFileSize(event.target.result.length)}.`);
 
         console.time('Parsing JSON');
         var json = JSON.parse(event.target.result);
@@ -241,9 +239,4 @@ body.ondrop = (e) => {
     e.preventDefault();
     return false;
 };
-
-function humanFileSize(size) {
-    var i = Math.floor(Math.log(size) / Math.log(1024));
-    return Math.round(100 * (size / Math.pow(1024, i))) / 100 + ' ' + ['B', 'kB', 'MB', 'GB'][i];
-}
 /* BIN_SPLIT */
