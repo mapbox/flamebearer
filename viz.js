@@ -1,7 +1,7 @@
 'use strict';
 
 const introEl = document.getElementById('intro');
-const controlsEl = document.getElementById('controls');
+const searchEl = document.getElementById('search');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
@@ -12,12 +12,13 @@ let names, levels, numTicks;
 let rangeMin = 0;
 let rangeMax = 1;
 let topLevel = 0;
-let graphWidth, numTicksLeft, numTicksRight, pxPerTick;
+let query = '';
+let graphWidth, pxPerTick;
 
 const padding = 20;
 const pxPerLevel = 18;
 const collapseThreshold = 5;
-const hideThreshold = 1;
+const hideThreshold = 0.5;
 const labelThreshold = 20;
 
 if (levels) {
@@ -26,7 +27,6 @@ if (levels) {
 
 function init() {
     document.body.classList.add('loaded');
-    controlsEl.style.display = 'block';
 
     // delta-decode bar positions
     for (const level of levels) {
@@ -52,9 +52,16 @@ canvas.onclick = (e) => {
     removeHighlight();
 };
 document.getElementById('reset').onclick = () => {
+    searchEl.value = query = '';
     window.location.hash = '';
+    render();
 };
 window.onresize = render;
+
+searchEl.oninput = (e) => {
+    query = e.target.value;
+    render();
+};
 
 function updateFromHash() {
     const [i, j] = window.location.hash.substr(1).split(',').map(Number);
@@ -102,20 +109,23 @@ function render() {
             const y = i * pxPerLevel;
             let numBarTicks = level[j + 1];
 
+            const inQuery = query && (names[level[j + 2]].indexOf(query) >= 0) || false;
+
             // merge very small blocks into big "collapsed" ones for performance
             let collapsed = numBarTicks * pxPerTick <= collapseThreshold;
             if (collapsed) {
                 while (
                     j < level.length - 3 &&
                     barIndex + numBarTicks === level[j + 3] &&
-                    level[j + 4] * pxPerTick <= collapseThreshold
+                    level[j + 4] * pxPerTick <= collapseThreshold &&
+                    (inQuery === (query && (names[level[j + 5]].indexOf(query) >= 0) || false))
                 ) {
                     j += 3;
                     numBarTicks += level[j + 1];
                 }
             }
 
-            const sw = numBarTicks * pxPerTick - 0.5;
+            const sw = numBarTicks * pxPerTick - (collapsed ? 0 : 0.5);
             const sh = pxPerLevel - 0.5;
 
             if (x < padding || x + sw + padding > graphWidth || sw < hideThreshold) continue;
@@ -130,9 +140,9 @@ function render() {
                 const intensity = Math.min(1, ratio * Math.pow(1.16, i) / (rangeMax - rangeMin));
                 const h = 50 - 50 * intensity;
                 const l = 65 + 7 * intensity;
-                ctx.fillStyle = `hsl(${h}, 100%, ${l}%)`;
+                ctx.fillStyle = inQuery ? 'lightgreen' : `hsl(${h}, 100%, ${l}%)`;
             } else {
-                ctx.fillStyle = '#eee';
+                ctx.fillStyle = inQuery ? 'lightgreen' : '#eee';
             }
             ctx.fill();
 
