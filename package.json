@@ -7,7 +7,8 @@
   "files": [
     "bin",
     "index.html",
-    "index.js"
+    "index.js",
+    "viz.js"
   ],
   "dependencies": {
     "concat-stream": "^1.6.2",
