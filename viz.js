@@ -11,7 +11,7 @@ let names, levels, numTicks;
 
 let rangeMin = 0;
 let rangeMax = 1;
-let numSkippedLevels = 0;
+let topLevel = 0;
 let graphWidth, numTicksLeft, numTicksRight, pxPerTick;
 
 const padding = 20;
@@ -60,21 +60,25 @@ function updateFromHash() {
     const [i, j] = window.location.hash.substr(1).split(',').map(Number);
 
     if (!isNaN(i) && !isNaN(j)) {
-        numSkippedLevels = i;
+        topLevel = i;
         rangeMin = levels[i][j] / numTicks;
         rangeMax = (levels[i][j] + levels[i][j + 1]) / numTicks;
     } else {
-        numSkippedLevels = 0;
+        topLevel = 0;
         rangeMin = 0;
         rangeMax = 1;
     }
+}
+
+function tickToX(i) {
+    return (i - numTicks * rangeMin) * pxPerTick + padding;
 }
 
 function render() {
     if (!levels) return;
 
     graphWidth = canvas.width = canvas.clientWidth;
-    canvas.height = pxPerLevel * (levels.length - numSkippedLevels);
+    canvas.height = pxPerLevel * (levels.length - topLevel);
     canvas.style.height = canvas.height + 'px';
 
     if (devicePixelRatio > 1) {
@@ -83,28 +87,24 @@ function render() {
         ctx.scale(2, 2);
     }
 
-    numTicksLeft = numTicks * rangeMin;
-    numTicksRight = numTicks * rangeMax;
-    pxPerTick = (graphWidth - 2 * padding) / (numTicksRight - numTicksLeft);
+    pxPerTick = (graphWidth - 2 * padding) / numTicks / (rangeMax - rangeMin);
 
     ctx.textBaseline = 'middle';
     ctx.font = '10px Tahoma, sans-serif';
     ctx.strokeStyle = 'white';
 
-    for (let i = 0; i < levels.length - numSkippedLevels; i++) {
-        const level = levels[numSkippedLevels + i];
+    for (let i = 0; i < levels.length - topLevel; i++) {
+        const level = levels[topLevel + i];
 
         for (let j = 0; j < level.length; j += 3) {
             const barIndex = level[j];
-            const x = (barIndex - numTicksLeft) * pxPerTick + padding;
+            const x = tickToX(barIndex);
             const y = i * pxPerLevel;
             let numBarTicks = level[j + 1];
 
-            let collapsed = false;
-
-            if (numBarTicks * pxPerTick <= collapseThreshold) {
-                collapsed = true;
-
+            // merge very small blocks into big "collapsed" ones for performance
+            let collapsed = numBarTicks * pxPerTick <= collapseThreshold;
+            if (collapsed) {
                 while (
                     j < level.length - 3 &&
                     barIndex + numBarTicks === level[j + 3] &&
@@ -116,21 +116,18 @@ function render() {
             }
 
             const sw = numBarTicks * pxPerTick - 0.5;
-
-            if (x < padding) continue;
-            if (x + sw + padding > graphWidth) continue;
-            if (sw < hideThreshold) continue;
-
             const sh = pxPerLevel - 0.5;
-            const ratio = numBarTicks / numTicks;
-            const localRatio = numBarTicks / (numTicksRight - numTicksLeft);
+
+            if (x < padding || x + sw + padding > graphWidth || sw < hideThreshold) continue;
 
             ctx.beginPath();
             ctx.rect(x, y, sw, sh);
 
+            const ratio = numBarTicks / numTicks;
+
             if (!collapsed) {
                 ctx.stroke();
-                const intensity = Math.min(1, localRatio * Math.pow(1.16, i));
+                const intensity = Math.min(1, ratio * Math.pow(1.16, i) / (rangeMax - rangeMin));
                 const h = 50 - 50 * intensity;
                 const l = 65 + 7 * intensity;
                 ctx.fillStyle = `hsl(${h}, 100%, ${l}%)`;
@@ -140,9 +137,10 @@ function render() {
             ctx.fill();
 
             if (!collapsed && sw >= labelThreshold) {
+                const percent = Math.round(10000 * ratio) / 100;
+                const name = `${names[level[j + 2]]} (${percent}%, ${numBarTicks} of ${numTicks} samples)`;
                 ctx.save();
                 ctx.clip();
-                const name = `${names[level[j + 2]]} (${Math.round(10000 * ratio) / 100}%, ${numBarTicks} of ${numTicks} samples)`;
                 ctx.fillStyle = 'black';
                 ctx.fillText(name, Math.max(x, padding) + 1, y + sh / 2);
                 ctx.restore();
@@ -152,22 +150,20 @@ function render() {
 }
 
 function xyToBar(x, y) {
-    const i = Math.floor(y / pxPerLevel) + numSkippedLevels;
+    const i = Math.floor(y / pxPerLevel) + topLevel;
     const level = levels[i];
 
-    // TODO binary search
     for (let j = 0; j < level.length; j += 3) {
-        const x0 = (level[j] - numTicksLeft) * pxPerTick + padding;
-        const x1 = (level[j] + level[j + 1] - numTicksLeft) * pxPerTick + padding;
-        if (x1 - x0 > collapseThreshold && x >= x0 && x <= x1) {
-            return {i, j};
-        }
+        const x0 = tickToX(level[j]);
+        const x1 = tickToX(level[j] + level[j + 1]);
+        if (x1 - x0 > collapseThreshold && x >= x0 && x <= x1) return {i, j};
     }
 
     return {};
 }
 
 let highlightEl = document.getElementById('highlight');
+highlightEl.style.height = pxPerLevel + 'px';
 
 canvas.onmousemove = highlightCurrent;
 canvas.onmouseout = window.onscroll = removeHighlight;
@@ -188,17 +184,15 @@ function highlightCurrent(e) {
     canvas.style.cursor = 'pointer';
 
     const level = levels[i];
-    const x = (level[j] - numTicksLeft) * pxPerTick + padding;
-    const y = (i - numSkippedLevels) * pxPerLevel;
-    const sw = level[j + 1] * pxPerTick - 0.5;
-    const sh = pxPerLevel - 0.5;
+    const x = tickToX(level[j]);
+    const y = (i - topLevel) * pxPerLevel;
+    const sw = tickToX(level[j] + level[j + 1]) - x;
 
     const canvasPos = canvas.getBoundingClientRect();
     highlightEl.style.display = 'block';
     highlightEl.style.left = (canvasPos.left + x) + 'px';
     highlightEl.style.top = (canvasPos.top + y) + 'px';
     highlightEl.style.width = sw + 'px';
-    highlightEl.style.height = sh + 'px';
 }
 
 // (function frame() { if (levels) render(); requestAnimationFrame(frame); })();

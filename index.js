@@ -38,16 +38,18 @@ function codeToName(code, sharedPath) {
     return '(unknown)';
 }
 
+// given two strings (e.g. abc, abd), returns the common starting part (ab)
 function getSharedStringPart(str1, str2) {
-    let shared = '';
+    let common = '';
     const len = Math.min(str1.length, str2.length);
     for (let i = 0; i < len; i++) {
-        if (str1[i] === str2[i]) shared += str1[i];
+        if (str1[i] === str2[i]) common += str1[i];
         else break;
     }
-    return shared;
+    return common;
 }
 
+// converts V8 prof log (generated with --prof-process --preprocess flags) into call stacks
 function v8logToStacks(log) {
     const stacks = [];
     const names = [];
@@ -95,11 +97,13 @@ function compareStacks(a, b) {
 }
 
 function mergeStacks(stacks) {
+    // sort call stacks so that they can be merged top-down
     stacks.sort(compareStacks);
 
     const levels = [];
     const queue = [0, 0, stacks.length - 1];
 
+    // use a queue instead of recursion so that we don't hit max call stack limit
     while (queue.length) {
         const right = queue.pop();
         const left = queue.pop();
@@ -114,6 +118,7 @@ function mergeStacks(stacks) {
                 continue;
             }
 
+            // find the range of adjacent blocks with the same name on the current stack level
             const start = i;
             let hasChildren = false;
             for (; i <= right && stacks[i][level] === id; i++) {
@@ -130,7 +135,7 @@ function mergeStacks(stacks) {
         }
     }
 
-    // delta-encode bar positions
+    // delta-encode bar positions for smaller output
     for (const level of levels) {
         let prev = 0;
         for (let i = 0; i < level.length; i += 3) {
