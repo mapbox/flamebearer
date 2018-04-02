@@ -15,7 +15,7 @@ let topLevel = 0;
 let query = '';
 let graphWidth, pxPerTick;
 
-const padding = 20;
+const padding = window.innerWidth <= 800 ? 5 : 20;
 const pxPerLevel = 18;
 const collapseThreshold = 5;
 const hideThreshold = 0.5;
@@ -148,7 +148,7 @@ function render() {
 
             if (!collapsed && sw >= labelThreshold) {
                 const percent = Math.round(10000 * ratio) / 100;
-                const name = `${names[level[j + 2]]} (${percent}%, ${numBarTicks} of ${numTicks} samples)`;
+                const name = `${names[level[j + 2]]} (${percent}%, ${numBarTicks} samples)`;
                 ctx.save();
                 ctx.clip();
                 ctx.fillStyle = 'black';
@@ -175,8 +175,10 @@ function xyToBar(x, y) {
 let highlightEl = document.getElementById('highlight');
 highlightEl.style.height = pxPerLevel + 'px';
 
-canvas.onmousemove = highlightCurrent;
-canvas.onmouseout = window.onscroll = removeHighlight;
+if (window.orientation === undefined) {
+    canvas.onmousemove = highlightCurrent;
+    canvas.onmouseout = window.onscroll = removeHighlight;
+}
 
 function removeHighlight() {
     canvas.style.cursor = '';

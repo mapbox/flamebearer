@@ -3,6 +3,7 @@
 <head>
 <title>flamebearer</title>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <style>
     html, body { height: 100%; }
     body { font-family: sans-serif; margin: 0; line-height: 1.4; }
@@ -21,6 +22,11 @@
     .loaded #intro { display: none; }
     .loaded h1 { line-height: 60px; margin: 0 30px; }
     .loaded #controls { display: block; }
+    @media only screen and (max-width: 500px) {
+    #controls { position: static; }
+    .loaded h1 { font-size: 24px; line-height: 40px; margin-left: 10px; }
+    .loaded #controls { padding: 0 5px 2px; }
+    }
 </style>
 </head>
 <body>
@@ -54,7 +60,7 @@ let topLevel = 0;
 let query = '';
 let graphWidth, pxPerTick;
 
-const padding = 20;
+const padding = window.innerWidth <= 800 ? 5 : 20;
 const pxPerLevel = 18;
 const collapseThreshold = 5;
 const hideThreshold = 0.5;
@@ -187,7 +193,7 @@ function render() {
 
             if (!collapsed && sw >= labelThreshold) {
                 const percent = Math.round(10000 * ratio) / 100;
-                const name = `${names[level[j + 2]]} (${percent}%, ${numBarTicks} of ${numTicks} samples)`;
+                const name = `${names[level[j + 2]]} (${percent}%, ${numBarTicks} samples)`;
                 ctx.save();
                 ctx.clip();
                 ctx.fillStyle = 'black';
@@ -214,8 +220,10 @@ function xyToBar(x, y) {
 let highlightEl = document.getElementById('highlight');
 highlightEl.style.height = pxPerLevel + 'px';
 
-canvas.onmousemove = highlightCurrent;
-canvas.onmouseout = window.onscroll = removeHighlight;
+if (window.orientation === undefined) {
+    canvas.onmousemove = highlightCurrent;
+    canvas.onmouseout = window.onscroll = removeHighlight;
+}
 
 function removeHighlight() {
     canvas.style.cursor = '';

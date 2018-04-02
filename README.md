@@ -2,7 +2,7 @@
 
 A blazing fast [flame graph](http://www.brendangregg.com/flamegraphs.html) tool for Node and V8.
 Used to visualize and explore performance profiling results.
-Designed to handle profiles of any size while remaining responsive and lightweight.
+Designed to produce fast, lightweight flame graphs that remain responsive even on really big input.
 
 ## [Example graph](https://mapbox.github.io/flamebearer/examples/rollup.html)
 
