@@ -21,6 +21,7 @@ const pxPerLevel = 18;
 const collapseThreshold = 5;
 const hideThreshold = 0.5;
 const labelThreshold = 20;
+const tooltipPadding = 30;
 
 highlightEl.style.height = pxPerLevel + 'px';
 
@@ -150,16 +151,24 @@ function render() {
             ctx.fill();
 
             if (!collapsed && sw >= labelThreshold) {
+
                 const percent = Math.round(10000 * ratio) / 100;
-                const name = `${names[level[j + 2]]} (${percent}%, ${numBarTicks} samples)`;
+                const functionName = names[level[j + 2]];
+
                 ctx.save();
                 ctx.clip();
                 ctx.fillStyle = 'black';
-                ctx.fillText(name, Math.max(x, 0) + 1, y + sh / 2);
+                ctx.fillText(getBarText(functionName, percent, numBarTicks), Math.max(x, 0) + 1, y + sh / 2);
                 ctx.restore();
             }
         }
     }
+}
+
+function getBarText(name, percent, numTicks) {
+
+    return `${name} (${percent}%, ${numTicks} samples)`;
+
 }
 
 // pixel coordinates to bar coordinates in the levels array
@@ -197,18 +206,15 @@ if (window.orientation === undefined) {
 function removeHighlight() {
     canvas.style.cursor = '';
     highlightEl.style.display = 'none';
+    tooltipEl.style.display = 'none';
 }
 
-function removeTooltip() {
-	tooltipEl.innerText = '';
-}
 
 function highlightCurrent(e) {
     const {i, j} = xyToBar(e.offsetX, e.offsetY);
 
     if (j === -1 || e.offsetX < 0 || e.offsetX > graphWidth) {
         removeHighlight();
-		removeTooltip();
         return;
     }
 
@@ -223,21 +229,26 @@ function highlightCurrent(e) {
     highlightEl.style.display = 'block';
     highlightEl.style.left = (canvasPos.left + x) + 'px';
     highlightEl.style.top = (canvasPos.top + y) + 'px';
-	highlightEl.style.width = sw + 'px';
-	
-	tooltipEl.innerText = names[level[j+2]];
-	tooltipEl.style.display = 'block';
-	if(e.offsetX + tooltipEl.clientWidth < canvasPos.width) {
+    highlightEl.style.width = sw + 'px';
 
-		tooltipEl.style.left = (canvasPos.left + e.offsetX) + 'px';
-		
-	} else {
-		
-		tooltipEl.style.left = (canvasPos.left + e.offsetX - tooltipEl.clientWidth) + 'px';
+    const numBarTicks = level[j + 1];
+    const ratio = numBarTicks / numTicks;
+    const percent = Math.round(10000 * ratio) / 100;
+    const mouseLeft = canvasPos.left + e.offsetX;
 
-	}
-	tooltipEl.style.top = (canvasPos.top + y + 30) + 'px';
-	
+    tooltipEl.innerText = getBarText(names[ level[j + 2] ], percent, numBarTicks);
+    tooltipEl.style.display = 'block';
+    if (mouseLeft + tooltipEl.clientWidth < canvasPos.width) {
+
+        tooltipEl.style.left = mouseLeft + 'px';
+
+    } else {
+
+        tooltipEl.style.left = (mouseLeft - tooltipEl.clientWidth) + 'px';
+
+    }
+    tooltipEl.style.top = (canvasPos.top + window.scrollY + e.offsetY + tooltipPadding) + 'px';
+
 }
 
 // (function frame() { if (levels) render(); requestAnimationFrame(frame); })();
