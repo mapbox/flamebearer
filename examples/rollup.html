@@ -6,35 +6,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <style>
     html, body { height: 100%; }
-    body { font-family: sans-serif; margin: 0; line-height: 1.4; }
+    body { font: 16px "Helvetica Neue", sans-serif; margin: 0; }
     body.hover { background: #cfc; }
-    h1 { font: bold 30px/60px "Helvetica Neue", sans-serif; margin: 30px 30px 10px; }
+    h1 { font-size: 30px; margin: 30px 30px 15px; }
     h1 a { color: black; text-decoration: none; }
     h1 a:hover { text-decoration: underline; }
-    #fire-icon { fill: red; }
+    #fire-icon { fill: #f53; width: 26px; height: 26px; vertical-align: -1px; }
     #intro { margin: 0 30px; }
-    #intro p { margin: 0 0 1em; }
-    p.code { color: #444; line-height: 1.2; }
+    code { font-size: 13px; color: #444; }
     code span { color: #aaa; }
     #canvas { width: 100%; }
-    #controls { position: absolute; top: 30px; right: 20px; display: none; }
+    #controls { display: none; }
+    #search { margin-right: 10px; }
     #highlight { position: fixed; pointer-events: none; background: #ffffff40; }
     .loaded #intro { display: none; }
-    .loaded h1 { line-height: 60px; margin: 0 30px; }
-    .loaded #controls { display: block; }
-    @media only screen and (max-width: 500px) {
-    #controls { position: static; }
-    .loaded h1 { font-size: 24px; line-height: 40px; margin-left: 10px; }
-    .loaded #controls { padding: 0 5px 2px; }
-    }
+    .loaded #header { display: flex; align-items: center; flex-flow: row wrap; padding: 7px 10px; }
+    .loaded h1 { font-size: 22px; margin: 0 auto 0 0; flex-shrink: 0; }
+    .loaded #fire-icon { width: 20px; height: 20px; }
+    .loaded #controls { display: block; flex-shrink: 0; }
 </style>
 </head>
 <body>
 
-<h1><svg id="fire-icon" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 15 15" style="enable-background:new 0 0 15 15;" xml:space="preserve"><path d="M7.5,0.5L5,4.5l-1.5-2 C2.9452,3.4753,0.8036,5.7924,0.8036,8.3036C0.8036,12.002,3.8017,15,7.5,15s6.6964-2.998,6.6964-6.6964 c0-2.5112-2.1416-4.8283-2.6964-5.8036l-1.5,2L7.5,0.5z M7.5,7c0,0,2.5,2.5618,2.5,4.5c0,0.8371-0.8259,2-2.5,2S5,12.3371,5,11.5 C5,9.6283,7.5,7,7.5,7z"/></svg> <a href="https://github.com/mapbox/flamebearer">flamebearer</a></h1>
-<div id="controls">
-    <input id="search" placeholder="Search..." />
-    <button id="reset">Reset view</button>
+<div id="header">
+    <h1><svg id="fire-icon" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 15 15" style="enable-background:new 0 0 15 15;" xml:space="preserve"><path d="M7.5,0.5L5,4.5l-1.5-2 C2.9452,3.4753,0.8036,5.7924,0.8036,8.3036C0.8036,12.002,3.8017,15,7.5,15s6.6964-2.998,6.6964-6.6964 c0-2.5112-2.1416-4.8283-2.6964-5.8036l-1.5,2L7.5,0.5z M7.5,7c0,0,2.5,2.5618,2.5,4.5c0,0.8371-0.8259,2-2.5,2S5,12.3371,5,11.5 C5,9.6283,7.5,7,7.5,7z"/></svg> <a href="https://github.com/mapbox/flamebearer">flamebearer</a></h1>
+    <div id="controls">
+        <input id="search" placeholder="Search..." />
+        <button id="reset">Reset view</button>
+    </div>
 </div>
 <div id="highlight"></div>
 <div id="intro"><!--  --></div>
@@ -45,6 +44,7 @@
 
 const introEl = document.getElementById('intro');
 const searchEl = document.getElementById('search');
+const highlightEl = document.getElementById('highlight');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
@@ -60,11 +60,12 @@ let topLevel = 0;
 let query = '';
 let graphWidth, pxPerTick;
 
-const padding = window.innerWidth <= 800 ? 5 : 20;
 const pxPerLevel = 18;
 const collapseThreshold = 5;
 const hideThreshold = 0.5;
 const labelThreshold = 20;
+
+highlightEl.style.height = pxPerLevel + 'px';
 
 if (levels) {
     init();
@@ -92,7 +93,7 @@ window.onhashchange = () => {
 };
 canvas.onclick = (e) => {
     const {i, j} = xyToBar(e.offsetX, e.offsetY);
-    if (i === undefined) return;
+    if (j === -1) return;
     window.location.hash = [i, j].join(',');
     removeHighlight();
 };
@@ -123,7 +124,7 @@ function updateFromHash() {
 }
 
 function tickToX(i) {
-    return (i - numTicks * rangeMin) * pxPerTick + padding;
+    return (i - numTicks * rangeMin) * pxPerTick;
 }
 
 function render() {
@@ -139,7 +140,7 @@ function render() {
         ctx.scale(2, 2);
     }
 
-    pxPerTick = (graphWidth - 2 * padding) / numTicks / (rangeMax - rangeMin);
+    pxPerTick = graphWidth / numTicks / (rangeMax - rangeMin);
 
     ctx.textBaseline = 'middle';
     ctx.font = '10px Tahoma, sans-serif';
@@ -157,7 +158,7 @@ function render() {
             const inQuery = query && (names[level[j + 2]].indexOf(query) >= 0) || false;
 
             // merge very small blocks into big "collapsed" ones for performance
-            let collapsed = numBarTicks * pxPerTick <= collapseThreshold;
+            const collapsed = numBarTicks * pxPerTick <= collapseThreshold;
             if (collapsed) {
                 while (
                     j < level.length - 3 &&
@@ -173,7 +174,7 @@ function render() {
             const sw = numBarTicks * pxPerTick - (collapsed ? 0 : 0.5);
             const sh = pxPerLevel - 0.5;
 
-            if (x < padding || x + sw + padding > graphWidth || sw < hideThreshold) continue;
+            if (x < 0 || x + sw > graphWidth || sw < hideThreshold) continue;
 
             ctx.beginPath();
             ctx.rect(x, y, sw, sh);
@@ -197,28 +198,39 @@ function render() {
                 ctx.save();
                 ctx.clip();
                 ctx.fillStyle = 'black';
-                ctx.fillText(name, Math.max(x, padding) + 1, y + sh / 2);
+                ctx.fillText(name, Math.max(x, 0) + 1, y + sh / 2);
                 ctx.restore();
             }
         }
     }
 }
 
+// pixel coordinates to bar coordinates in the levels array
 function xyToBar(x, y) {
     const i = Math.floor(y / pxPerLevel) + topLevel;
-    const level = levels[i];
-
-    for (let j = 0; j < level.length; j += 3) {
-        const x0 = tickToX(level[j]);
-        const x1 = tickToX(level[j] + level[j + 1]);
-        if (x1 - x0 > collapseThreshold && x >= x0 && x <= x1) return {i, j};
-    }
-
-    return {};
+    const j = binarySearchLevel(x, levels[i]);
+    return {i, j};
 }
 
-let highlightEl = document.getElementById('highlight');
-highlightEl.style.height = pxPerLevel + 'px';
+// binary search of a block in a stack level
+function binarySearchLevel(x, level) {
+    let i = 0;
+    let j = level.length - 3;
+    while (i <= j) {
+        const m = 3 * ((i / 3 + j / 3) >> 1);
+        const x0 = tickToX(level[m]);
+        const x1 = tickToX(level[m] + level[m + 1]);
+        if (x0 <= x && x1 >= x) {
+            return x1 - x0 > collapseThreshold ? m : -1;
+        }
+        if (x0 > x) {
+            j = m - 3;
+        } else {
+            i = m + 3;
+        }
+    }
+    return -1;
+}
 
 if (window.orientation === undefined) {
     canvas.onmousemove = highlightCurrent;
@@ -233,7 +245,7 @@ function removeHighlight() {
 function highlightCurrent(e) {
     const {i, j} = xyToBar(e.offsetX, e.offsetY);
 
-    if (i === undefined || e.offsetX < padding || e.offsetX > graphWidth - padding) {
+    if (j === -1 || e.offsetX < 0 || e.offsetX > graphWidth) {
         removeHighlight();
         return;
     }
