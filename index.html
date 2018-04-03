@@ -6,40 +6,39 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <style>
     html, body { height: 100%; }
-    body { font-family: sans-serif; margin: 0; line-height: 1.4; }
+    body { font: 16px "Helvetica Neue", sans-serif; margin: 0; }
     body.hover { background: #cfc; }
-    h1 { font: bold 30px/60px "Helvetica Neue", sans-serif; margin: 30px 30px 10px; }
+    h1 { font-size: 30px; margin: 30px 30px 15px; }
     h1 a { color: black; text-decoration: none; }
     h1 a:hover { text-decoration: underline; }
-    #fire-icon { fill: red; }
+    #fire-icon { fill: #f53; width: 26px; height: 26px; vertical-align: -1px; }
     #intro { margin: 0 30px; }
-    #intro p { margin: 0 0 1em; }
-    p.code { color: #444; line-height: 1.2; }
+    code { font-size: 13px; color: #444; }
     code span { color: #aaa; }
     #canvas { width: 100%; }
-    #controls { position: absolute; top: 30px; right: 20px; display: none; }
+    #controls { display: none; }
+    #search { margin-right: 10px; }
     #highlight { position: fixed; pointer-events: none; background: #ffffff40; }
     .loaded #intro { display: none; }
-    .loaded h1 { line-height: 60px; margin: 0 30px; }
-    .loaded #controls { display: block; }
-    @media only screen and (max-width: 500px) {
-    #controls { position: static; }
-    .loaded h1 { font-size: 24px; line-height: 40px; margin-left: 10px; }
-    .loaded #controls { padding: 0 5px 2px; }
-    }
+    .loaded #header { display: flex; align-items: center; flex-flow: row wrap; padding: 7px 10px; }
+    .loaded h1 { font-size: 22px; margin: 0 auto 0 0; flex-shrink: 0; }
+    .loaded #fire-icon { width: 20px; height: 20px; }
+    .loaded #controls { display: block; flex-shrink: 0; }
 </style>
 </head>
 <body>
 
-<h1><svg id="fire-icon" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 15 15" style="enable-background:new 0 0 15 15;" xml:space="preserve"><path d="M7.5,0.5L5,4.5l-1.5-2 C2.9452,3.4753,0.8036,5.7924,0.8036,8.3036C0.8036,12.002,3.8017,15,7.5,15s6.6964-2.998,6.6964-6.6964 c0-2.5112-2.1416-4.8283-2.6964-5.8036l-1.5,2L7.5,0.5z M7.5,7c0,0,2.5,2.5618,2.5,4.5c0,0.8371-0.8259,2-2.5,2S5,12.3371,5,11.5 C5,9.6283,7.5,7,7.5,7z"/></svg> <a href="https://github.com/mapbox/flamebearer">flamebearer</a></h1>
-<div id="controls">
-    <input id="search" placeholder="Search..." />
-    <button id="reset">Reset view</button>
+<div id="header">
+    <h1><svg id="fire-icon" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 15 15" style="enable-background:new 0 0 15 15;" xml:space="preserve"><path d="M7.5,0.5L5,4.5l-1.5-2 C2.9452,3.4753,0.8036,5.7924,0.8036,8.3036C0.8036,12.002,3.8017,15,7.5,15s6.6964-2.998,6.6964-6.6964 c0-2.5112-2.1416-4.8283-2.6964-5.8036l-1.5,2L7.5,0.5z M7.5,7c0,0,2.5,2.5618,2.5,4.5c0,0.8371-0.8259,2-2.5,2S5,12.3371,5,11.5 C5,9.6283,7.5,7,7.5,7z"/></svg> <a href="https://github.com/mapbox/flamebearer">flamebearer</a></h1>
+    <div id="controls">
+        <input id="search" placeholder="Search..." />
+        <button id="reset">Reset view</button>
+    </div>
 </div>
 <div id="highlight"></div>
 <div id="intro"><!-- /* BIN_SPLIT */ -->
     <p>Generate a flame graph by <strong>dragging</strong> a JSON V8 log on this page:</p>
-    <p class="code"><code>
+    <p><code>
         node --prof app.js <span># profile your app (Node v8.5+ required)</span><br>
         node --prof-process --preprocess -j isolate*.log > v8.json <span># generate a V8 log</span><br>
         <span># then drag and drop the resulting file here</span>

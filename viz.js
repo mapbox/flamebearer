@@ -16,7 +16,6 @@ let topLevel = 0;
 let query = '';
 let graphWidth, pxPerTick;
 
-const padding = window.innerWidth <= 800 ? 5 : 20;
 const pxPerLevel = 18;
 const collapseThreshold = 5;
 const hideThreshold = 0.5;
@@ -81,7 +80,7 @@ function updateFromHash() {
 }
 
 function tickToX(i) {
-    return (i - numTicks * rangeMin) * pxPerTick + padding;
+    return (i - numTicks * rangeMin) * pxPerTick;
 }
 
 function render() {
@@ -97,7 +96,7 @@ function render() {
         ctx.scale(2, 2);
     }
 
-    pxPerTick = (graphWidth - 2 * padding) / numTicks / (rangeMax - rangeMin);
+    pxPerTick = graphWidth / numTicks / (rangeMax - rangeMin);
 
     ctx.textBaseline = 'middle';
     ctx.font = '10px Tahoma, sans-serif';
@@ -131,7 +130,7 @@ function render() {
             const sw = numBarTicks * pxPerTick - (collapsed ? 0 : 0.5);
             const sh = pxPerLevel - 0.5;
 
-            if (x < padding || x + sw + padding > graphWidth || sw < hideThreshold) continue;
+            if (x < 0 || x + sw > graphWidth || sw < hideThreshold) continue;
 
             ctx.beginPath();
             ctx.rect(x, y, sw, sh);
@@ -155,7 +154,7 @@ function render() {
                 ctx.save();
                 ctx.clip();
                 ctx.fillStyle = 'black';
-                ctx.fillText(name, Math.max(x, padding) + 1, y + sh / 2);
+                ctx.fillText(name, Math.max(x, 0) + 1, y + sh / 2);
                 ctx.restore();
             }
         }
@@ -202,7 +201,7 @@ function removeHighlight() {
 function highlightCurrent(e) {
     const {i, j} = xyToBar(e.offsetX, e.offsetY);
 
-    if (j === -1 || e.offsetX < padding || e.offsetX > graphWidth - padding) {
+    if (j === -1 || e.offsetX < 0 || e.offsetX > graphWidth) {
         removeHighlight();
         return;
     }
