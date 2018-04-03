@@ -47,7 +47,7 @@ window.onhashchange = () => {
 };
 canvas.onclick = (e) => {
     const {i, j} = xyToBar(e.offsetX, e.offsetY);
-    if (i === undefined) return;
+    if (j === -1) return;
     window.location.hash = [i, j].join(',');
     removeHighlight();
 };
@@ -159,17 +159,31 @@ function render() {
     }
 }
 
+// pixel coordinates to bar coordinates in the levels array
 function xyToBar(x, y) {
     const i = Math.floor(y / pxPerLevel) + topLevel;
-    const level = levels[i];
+    const j = binarySearchLevel(x, levels[i]);
+    return {i, j};
+}
 
-    for (let j = 0; j < level.length; j += 3) {
-        const x0 = tickToX(level[j]);
-        const x1 = tickToX(level[j] + level[j + 1]);
-        if (x1 - x0 > collapseThreshold && x >= x0 && x <= x1) return {i, j};
+// binary search of a block in a stack level
+function binarySearchLevel(x, level) {
+    let i = 0;
+    let j = level.length - 3;
+    while (i <= j) {
+        const m = 3 * ((i / 3 + j / 3) >> 1);
+        const x0 = tickToX(level[m]);
+        const x1 = tickToX(level[m] + level[m + 1]);
+        if (x0 <= x && x1 >= x) {
+            return x1 - x0 > collapseThreshold ? m : -1;
+        }
+        if (x0 > x) {
+            j = m - 3;
+        } else {
+            i = m + 3;
+        }
     }
-
-    return {};
+    return -1;
 }
 
 let highlightEl = document.getElementById('highlight');
@@ -188,7 +202,7 @@ function removeHighlight() {
 function highlightCurrent(e) {
     const {i, j} = xyToBar(e.offsetX, e.offsetY);
 
-    if (i === undefined || e.offsetX < padding || e.offsetX > graphWidth - padding) {
+    if (j === -1 || e.offsetX < padding || e.offsetX > graphWidth - padding) {
         removeHighlight();
         return;
     }
