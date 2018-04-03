@@ -3,6 +3,7 @@
 const introEl = document.getElementById('intro');
 const searchEl = document.getElementById('search');
 const highlightEl = document.getElementById('highlight');
+const tooltipEl = document.getElementById('tooltip');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
@@ -199,11 +200,16 @@ function removeHighlight() {
     highlightEl.style.display = 'none';
 }
 
+function removeTooltip() {
+	tooltipEl.innerText = '';
+}
+
 function highlightCurrent(e) {
     const {i, j} = xyToBar(e.offsetX, e.offsetY);
 
     if (j === -1 || e.offsetX < padding || e.offsetX > graphWidth - padding) {
-        removeHighlight();
+		removeHighlight();
+		removeTooltip();
         return;
     }
 
@@ -218,7 +224,21 @@ function highlightCurrent(e) {
     highlightEl.style.display = 'block';
     highlightEl.style.left = (canvasPos.left + x) + 'px';
     highlightEl.style.top = (canvasPos.top + y) + 'px';
-    highlightEl.style.width = sw + 'px';
+	highlightEl.style.width = sw + 'px';
+	
+	tooltipEl.innerText = names[level[j+2]];
+	tooltipEl.style.display = 'block';
+	if(e.offsetX + tooltipEl.clientWidth < canvasPos.width) {
+
+		tooltipEl.style.left = (canvasPos.left + e.offsetX) + 'px';
+		
+	} else {
+		
+		tooltipEl.style.left = (canvasPos.left + e.offsetX - tooltipEl.clientWidth) + 'px';
+
+	}
+	tooltipEl.style.top = (canvasPos.top + y + 30) + 'px';
+	
 }
 
 // (function frame() { if (levels) render(); requestAnimationFrame(frame); })();

@@ -27,6 +27,15 @@
     .loaded h1 { font-size: 24px; line-height: 40px; margin-left: 10px; }
     .loaded #controls { padding: 0 5px 2px; }
     }
+	#tooltip { 
+		position: absolute; 
+		width: 400px;
+		word-wrap: break-word; 
+		background: #ffffff80; 
+		-webkit-box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75);
+		-moz-box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75);
+		box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75);
+	}
 </style>
 </head>
 <body>
@@ -37,6 +46,7 @@
     <button id="reset">Reset view</button>
 </div>
 <div id="highlight"></div>
+<div id="tooltip"></div>
 <div id="intro"><!-- /* BIN_SPLIT */ -->
     <p>Generate a flame graph by <strong>dragging</strong> a JSON V8 log on this page:</p>
     <p class="code"><code>
