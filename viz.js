@@ -2,6 +2,7 @@
 
 const introEl = document.getElementById('intro');
 const searchEl = document.getElementById('search');
+const highlightEl = document.getElementById('highlight');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
@@ -20,6 +21,8 @@ const pxPerLevel = 18;
 const collapseThreshold = 5;
 const hideThreshold = 0.5;
 const labelThreshold = 20;
+
+highlightEl.style.height = pxPerLevel + 'px';
 
 if (levels) {
     init();
@@ -112,7 +115,7 @@ function render() {
             const inQuery = query && (names[level[j + 2]].indexOf(query) >= 0) || false;
 
             // merge very small blocks into big "collapsed" ones for performance
-            let collapsed = numBarTicks * pxPerTick <= collapseThreshold;
+            const collapsed = numBarTicks * pxPerTick <= collapseThreshold;
             if (collapsed) {
                 while (
                     j < level.length - 3 &&
@@ -186,9 +189,6 @@ function binarySearchLevel(x, level) {
     return -1;
 }
 
-let highlightEl = document.getElementById('highlight');
-highlightEl.style.height = pxPerLevel + 'px';
-
 if (window.orientation === undefined) {
     canvas.onmousemove = highlightCurrent;
     canvas.onmouseout = window.onscroll = removeHighlight;
@@ -243,19 +243,19 @@ body.ondrop = (e) => {
 
     console.time('Loading');
 
-    var reader = new FileReader();
+    const reader = new FileReader();
     reader.onload = function (event) {
         console.timeEnd('Loading');
 
         console.time('Parsing JSON');
-        var json = JSON.parse(event.target.result);
+        const json = JSON.parse(event.target.result);
         console.timeEnd('Parsing JSON');
 
         console.time('Processing stacks');
-        let stacks;
-        ({names, stacks} = v8logToStacks(json));
-        numTicks = stacks.length;
-        levels = mergeStacks(stacks);
+        const result = v8logToStacks(json);
+        names = result.names;
+        numTicks = result.stacks.length;
+        levels = mergeStacks(result.stacks);
         console.timeEnd('Processing stacks');
 
         init();

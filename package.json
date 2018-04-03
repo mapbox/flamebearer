@@ -25,7 +25,11 @@
     "test": "eslint index.js viz.js bin/flamebearer"
   },
   "eslintConfig": {
-    "extends": "mourner"
+    "extends": "mourner",
+    "rules": {
+      "no-var": "error",
+      "prefer-const": "error"
+    }
   },
   "keywords": [
     "flame graph",
