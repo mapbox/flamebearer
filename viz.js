@@ -131,7 +131,7 @@ function render() {
             const sw = numBarTicks * pxPerTick - (collapsed ? 0 : 0.5);
             const sh = pxPerLevel - 0.5;
 
-            if (x < 0 || x + sw > graphWidth || sw < hideThreshold) continue;
+            if (x < -1 || x + sw > graphWidth + 1 || sw < hideThreshold) continue;
 
             ctx.beginPath();
             ctx.rect(x, y, sw, sh);
