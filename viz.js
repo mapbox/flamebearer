@@ -52,7 +52,7 @@ canvas.onclick = (e) => {
     const {i, j} = xyToBar(e.offsetX, e.offsetY);
     if (j === -1) return;
     window.location.hash = [i, j].join(',');
-    removeHighlight();
+    removeHover();
 };
 document.getElementById('reset').onclick = () => {
     searchEl.value = query = '';
@@ -193,10 +193,10 @@ function binarySearchLevel(x, level) {
 
 if (window.orientation === undefined) {
     canvas.onmousemove = addHover;
-    canvas.onmouseout = window.onscroll = removeHighlight;
+    canvas.onmouseout = window.onscroll = removeHover;
 }
 
-function removeHighlight() {
+function removeHover() {
     canvas.style.cursor = '';
     highlightEl.style.display = 'none';
     tooltipEl.style.display = 'none';
@@ -206,7 +206,7 @@ function addHover(e) {
     const {i, j} = xyToBar(e.offsetX, e.offsetY);
 
     if (j === -1 || e.offsetX < 0 || e.offsetX > graphWidth) {
-        removeHighlight();
+        removeHover();
         return;
     }
 
