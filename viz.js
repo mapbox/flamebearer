@@ -21,7 +21,6 @@ const pxPerLevel = 18;
 const collapseThreshold = 5;
 const hideThreshold = 0.5;
 const labelThreshold = 20;
-const tooltipPadding = 30;
 
 highlightEl.style.height = pxPerLevel + 'px';
 
@@ -153,22 +152,16 @@ function render() {
             if (!collapsed && sw >= labelThreshold) {
 
                 const percent = Math.round(10000 * ratio) / 100;
-                const functionName = names[level[j + 2]];
+                const name = `${names[level[j + 2]]} (${percent}%, ${numBarTicks} samples)`;
 
                 ctx.save();
                 ctx.clip();
                 ctx.fillStyle = 'black';
-                ctx.fillText(getBarText(functionName, percent, numBarTicks), Math.max(x, 0) + 1, y + sh / 2);
+                ctx.fillText(name, Math.max(x, 0) + 1, y + sh / 2);
                 ctx.restore();
             }
         }
     }
-}
-
-function getBarText(name, percent, numTicks) {
-
-    return `${name} (${percent}%, ${numTicks} samples)`;
-
 }
 
 // pixel coordinates to bar coordinates in the levels array
@@ -199,7 +192,7 @@ function binarySearchLevel(x, level) {
 }
 
 if (window.orientation === undefined) {
-    canvas.onmousemove = highlightCurrent;
+    canvas.onmousemove = addHover;
     canvas.onmouseout = window.onscroll = removeHighlight;
 }
 
@@ -209,8 +202,7 @@ function removeHighlight() {
     tooltipEl.style.display = 'none';
 }
 
-
-function highlightCurrent(e) {
+function addHover(e) {
     const {i, j} = xyToBar(e.offsetX, e.offsetY);
 
     if (j === -1 || e.offsetX < 0 || e.offsetX > graphWidth) {
@@ -225,30 +217,22 @@ function highlightCurrent(e) {
     const y = (i - topLevel) * pxPerLevel;
     const sw = tickToX(level[j] + level[j + 1]) - x;
 
-    const canvasPos = canvas.getBoundingClientRect();
     highlightEl.style.display = 'block';
-    highlightEl.style.left = (canvasPos.left + x) + 'px';
-    highlightEl.style.top = (canvasPos.top + y) + 'px';
+    highlightEl.style.left = x + 'px';
+    highlightEl.style.top = (canvas.offsetTop + y) + 'px';
     highlightEl.style.width = sw + 'px';
 
     const numBarTicks = level[j + 1];
-    const ratio = numBarTicks / numTicks;
-    const percent = Math.round(10000 * ratio) / 100;
-    const mouseLeft = canvasPos.left + e.offsetX;
+    const percent = Math.round(10000 * numBarTicks / numTicks) / 100;
+    const time = `<span class="time">(${percent}%, ${numBarTicks} samples)</span>`;
+    let content = names[level[j + 2]];
+    if (content[0] !== '(') content = content.replace(' ', ` ${time}<br><span class="path">`) + '</span>';
+    else content += ` ${time}`;
 
-    tooltipEl.innerText = getBarText(names[ level[j + 2] ], percent, numBarTicks);
+    tooltipEl.innerHTML = content;
     tooltipEl.style.display = 'block';
-    if (mouseLeft + tooltipEl.clientWidth < canvasPos.width) {
-
-        tooltipEl.style.left = mouseLeft + 'px';
-
-    } else {
-
-        tooltipEl.style.left = (mouseLeft - tooltipEl.clientWidth) + 'px';
-
-    }
-    tooltipEl.style.top = (canvasPos.top + window.scrollY + e.offsetY + tooltipPadding) + 'px';
-
+    tooltipEl.style.left = (Math.min(e.offsetX + 15 + tooltipEl.clientWidth, graphWidth) - tooltipEl.clientWidth) + 'px';
+    tooltipEl.style.top = (canvas.offsetTop + e.offsetY + 12) + 'px';
 }
 
 // (function frame() { if (levels) render(); requestAnimationFrame(frame); })();
