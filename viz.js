@@ -3,6 +3,7 @@
 const introEl = document.getElementById('intro');
 const searchEl = document.getElementById('search');
 const highlightEl = document.getElementById('highlight');
+const tooltipEl = document.getElementById('tooltip');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
@@ -51,7 +52,7 @@ canvas.onclick = (e) => {
     const {i, j} = xyToBar(e.offsetX, e.offsetY);
     if (j === -1) return;
     window.location.hash = [i, j].join(',');
-    removeHighlight();
+    removeHover();
 };
 document.getElementById('reset').onclick = () => {
     searchEl.value = query = '';
@@ -149,8 +150,10 @@ function render() {
             ctx.fill();
 
             if (!collapsed && sw >= labelThreshold) {
+
                 const percent = Math.round(10000 * ratio) / 100;
                 const name = `${names[level[j + 2]]} (${percent}%, ${numBarTicks} samples)`;
+
                 ctx.save();
                 ctx.clip();
                 ctx.fillStyle = 'black';
@@ -189,20 +192,21 @@ function binarySearchLevel(x, level) {
 }
 
 if (window.orientation === undefined) {
-    canvas.onmousemove = highlightCurrent;
-    canvas.onmouseout = window.onscroll = removeHighlight;
+    canvas.onmousemove = addHover;
+    canvas.onmouseout = window.onscroll = removeHover;
 }
 
-function removeHighlight() {
+function removeHover() {
     canvas.style.cursor = '';
     highlightEl.style.display = 'none';
+    tooltipEl.style.display = 'none';
 }
 
-function highlightCurrent(e) {
+function addHover(e) {
     const {i, j} = xyToBar(e.offsetX, e.offsetY);
 
     if (j === -1 || e.offsetX < 0 || e.offsetX > graphWidth) {
-        removeHighlight();
+        removeHover();
         return;
     }
 
@@ -213,11 +217,22 @@ function highlightCurrent(e) {
     const y = (i - topLevel) * pxPerLevel;
     const sw = tickToX(level[j] + level[j + 1]) - x;
 
-    const canvasPos = canvas.getBoundingClientRect();
     highlightEl.style.display = 'block';
-    highlightEl.style.left = (canvasPos.left + x) + 'px';
-    highlightEl.style.top = (canvasPos.top + y) + 'px';
+    highlightEl.style.left = x + 'px';
+    highlightEl.style.top = (canvas.offsetTop + y) + 'px';
     highlightEl.style.width = sw + 'px';
+
+    const numBarTicks = level[j + 1];
+    const percent = Math.round(10000 * numBarTicks / numTicks) / 100;
+    const time = `<span class="time">(${percent}%, ${numBarTicks} samples)</span>`;
+    let content = names[level[j + 2]];
+    if (content[0] !== '(') content = content.replace(' ', ` ${time}<br><span class="path">`) + '</span>';
+    else content += ` ${time}`;
+
+    tooltipEl.innerHTML = content;
+    tooltipEl.style.display = 'block';
+    tooltipEl.style.left = (Math.min(e.offsetX + 15 + tooltipEl.clientWidth, graphWidth) - tooltipEl.clientWidth) + 'px';
+    tooltipEl.style.top = (canvas.offsetTop + e.offsetY + 12) + 'px';
 }
 
 // (function frame() { if (levels) render(); requestAnimationFrame(frame); })();
